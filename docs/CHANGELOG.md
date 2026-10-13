@@ -5,6 +5,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.6.1] - 2026-10-13
+
+### Agregado
+
+- `@ghegar/panal/ol` exporta `lonLatToMercatorExtent`, `expandExtent`, `containsExtent` y `bboxCql`,
+  para que el consumidor cuente los puntos de la misma vista que va a descargar.
+
 ## [0.6.0] - 2026-10-13
 
 ### Agregado
