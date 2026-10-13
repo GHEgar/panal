@@ -1,10 +1,11 @@
 import { aggregate } from '@ghegar/panal';
 import type { HexbinSource, CellSource } from '@ghegar/panal/ol';
-import { fromCellProvider, fromVectorSource, fromWfs, toInputs } from '@ghegar/panal/ol';
+import { createWorkerWfsSource, fromCellProvider, fromVectorSource, fromWfs, toInputs } from '@ghegar/panal/ol';
 import VectorSource from 'ol/source/Vector.js';
 import { syntheticPoints } from './data.js';
+import { sharedWorker } from './worker.js';
 
-export type SourceKind = 'synthetic' | 'wfs' | 'server';
+export type SourceKind = 'synthetic' | 'wfs' | 'wfs-worker' | 'server';
 
 export interface DemoSource {
     source: HexbinSource | CellSource;
@@ -12,6 +13,7 @@ export interface DemoSource {
     zoom: number;
     value: string;
     describe: () => string;
+    release?: () => void;
 }
 
 const points = syntheticPoints(20_000);
@@ -43,6 +45,26 @@ const wfs = (): DemoSource => {
     };
 };
 
+const wfsWorker = (): DemoSource => {
+    const source = createWorkerWfsSource(sharedWorker(), {
+        url: 'https://gs-stable.geosolutionsgroup.com/geoserver/wfs',
+        typeName: 'sf:bugsites',
+        pageSize: 25,
+        value: 'cat',
+    });
+    return {
+        source,
+        center: [-103.6, 44.4],
+        zoom: 9.5,
+        value: 'cat',
+        describe: () => {
+            const { status, loaded, error } = source.getState();
+            return status === 'error' ? `WFS: ${error?.message ?? 'error'}` : `WFS en worker ${status}: ${loaded} puntos`;
+        },
+        release: () => source.release(),
+    };
+};
+
 const server = (): DemoSource => {
     const inputs = toInputs(points, 'EPSG:3857', 'magnitude');
     return {
@@ -63,4 +85,4 @@ const server = (): DemoSource => {
 };
 
 export const demoSource = (kind: SourceKind): DemoSource =>
-    kind === 'wfs' ? wfs() : kind === 'server' ? server() : synthetic();
+    kind === 'wfs' ? wfs() : kind === 'wfs-worker' ? wfsWorker() : kind === 'server' ? server() : synthetic();

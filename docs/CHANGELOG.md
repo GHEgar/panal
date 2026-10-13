@@ -5,6 +5,25 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.4.0] - 2026-10-13
+
+### Agregado
+
+- `rollup`: celdas padre desde celdas hijas, sin los puntos, con los reductores integrados.
+- `rollup` en `fromCellProvider`: si el zoom pide una resolución más gruesa que las del servidor, se
+  sube la más gruesa disponible (`mean` ponderado por `count`).
+- Corrección por latitud en el selector de resolución (`pick(zoom, latitude)`), activa por defecto; la
+  capa usa la latitud del centro de la vista.
+- `createWorkerWfsSource`: descarga, parseo y agregación del WFS dentro del worker; solo las celdas
+  llegan al hilo principal y los miembros se piden al seleccionar.
+- `openChannel`: el agregador y varias fuentes comparten un worker con ids por canal y cancelación.
+- Workflow de GitHub Pages para el demo.
+
+### Cambiado
+
+- El protocolo del worker tiene mensajes con tipo e ids de texto.
+- La paginación del WFS vive en un módulo sin OpenLayers (`fetchWfsPages`), compartido con el worker.
+
 ## [0.3.0] - 2026-10-13
 
 ### Agregado

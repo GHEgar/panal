@@ -3,7 +3,7 @@ import type OlMap from 'ol/Map.js';
 import { transformExtent } from 'ol/proj.js';
 import { aggregate } from '../core/aggregate.js';
 import type { AggregateInput, Aggregator, Cell, Reducer } from '../core/types.js';
-import { effectiveResolution, toCells } from './server.js';
+import { planServerResolution, rollupServerCells, toCells } from './server.js';
 import type { CellSource, LonLatExtent } from './server.js';
 
 export interface ProduceRequest {
@@ -32,11 +32,12 @@ const viewExtent = (map: OlMap): LonLatExtent => {
 export const produceCells = (request: ProduceRequest): Produced => {
     const { map, inputs, reducer, aggregator, cellSource, signal } = request;
     if (cellSource) {
-        const resolution = effectiveResolution(request.resolution, cellSource.resolutions);
+        const { request: asked, target } = planServerResolution(request.resolution, cellSource);
+        const mode = cellSource.rollup;
         const cells = cellSource
-            .load({ resolution, extent: viewExtent(map), projection: map.getView().getProjection(), signal })
-            .then(toCells);
-        return { resolution, cells };
+            .load({ resolution: asked, extent: viewExtent(map), projection: map.getView().getProjection(), signal })
+            .then(found => (mode && target !== asked ? rollupServerCells(found, target, mode) : toCells(found)));
+        return { resolution: target, cells };
     }
     const options = { resolution: request.resolution, reducer };
     const result = aggregator ? aggregator(inputs, options) : aggregate(inputs, options);

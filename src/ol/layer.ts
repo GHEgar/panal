@@ -124,7 +124,7 @@ export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
         if (!loader) return { h3Index: cell.h3Index, cell, members: cell.members, status: 'ready', error: null };
         const current = new AbortController();
         membersController = current;
-        loader({ h3Index: cell.h3Index, resolution: snapshot.resolution ?? 0, signal: current.signal }).then((members) => {
+        loader({ h3Index: cell.h3Index, resolution: snapshot.resolution ?? 0, projection: projection(), signal: current.signal }).then((members) => {
             if (membersController !== current) return;
             snapshot = { ...snapshot, selection: { h3Index: cell.h3Index, cell, members, status: 'ready', error: null } };
             emit();
@@ -175,7 +175,13 @@ export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
         });
     };
 
-    const currentResolution = (): number => fixed ?? (picker as NonNullable<typeof picker>).pick(map.getView().getZoom() ?? NaN);
+    const centerLatitude = (): number | undefined => {
+        const center = map.getView().getCenter();
+        return center ? (toLonLat(center, projection())[1] as number) : undefined;
+    };
+
+    const currentResolution = (): number =>
+        fixed ?? (picker as NonNullable<typeof picker>).pick(map.getView().getZoom() ?? NaN, centerLatitude());
 
     const readInputs = () => {
         if (pointSource) inputs = toInputs(pointSource.read(projection()), projection(), value);
@@ -218,7 +224,7 @@ export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
     };
 
     const moveKey = map.on('moveend', onMoveEnd);
-    const unsubscribeSource = pointSource ? pointSource.subscribe(onSourceChange) : () => undefined;
+    const unsubscribeSource = pointSource?.subscribe(onSourceChange) ?? cellSource?.listenChanges?.(onSourceChange) ?? (() => undefined);
     map.addLayer(layer);
     refresh();
 

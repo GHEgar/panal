@@ -64,12 +64,19 @@ const picker = createResolutionPicker({ hysteresis: 0.3 });
 picker.pick(map.getView().getZoom());
 ```
 
-A member with several coordinates (a multipoint) counts once in every cell it touches. Each cell
-keeps `count` and `sum`, so the mean of a parent cell can be derived without the points.
+A member with several coordinates (a multipoint) counts once in every cell it touches.
+
+`rollup(cells, { resolution, reducer })` builds parent cells from finer ones without the points:
+counts, sums and value counts add up, min and max combine, and the mean is `sum / valueCount`. Custom
+reducers cannot be rolled up. H3 children overhang their parent, so a rolled-up cell is the H3
+hierarchy's answer, not the same as aggregating the points straight at the coarse resolution: in a
+test over central Mexico about 6 % of points land in a different coarse cell. Totals are preserved.
 
 The default zoom → resolution table aims at about 40 cells across a 1 000 px viewport at the equator.
 Pass your own `table` (`[{ maxZoom, resolution }]`) to change it. With `hysteresis: h` the resolution
-only changes once the zoom goes `h` levels past a threshold.
+only changes once the zoom goes `h` levels past a threshold. `pick(zoom, latitude)` adds
+`log2(1 / cos φ)` to the zoom, because Web Mercator stretches cells away from the equator; the layer
+passes the latitude of the view center. Turn it off with `latitudeCorrection: false`.
 
 ## OpenLayers
 
@@ -152,7 +159,9 @@ const source = fromCellProvider({
 ```
 
 With `resolutions`, panal asks for the finest available resolution that does not exceed the one the
-zoom wants (or the coarsest when none fits). A superseded request is aborted and its answer ignored.
+zoom wants (or the coarsest when none fits). Add `rollup: 'sum' | 'min' | 'max' | 'mean'` and, when the
+zoom wants a coarser resolution than the server has, panal rolls the coarsest one up; `mean` is
+weighted by `count`. A superseded request is aborted and its answer ignored.
 `getSnapshot().status` is `loading` while waiting and `error` (with `error`) if the provider throws.
 
 ## Web Worker
@@ -187,6 +196,25 @@ const snapshot = useHexbinSnapshot(hexbin);
 The layer is created in an effect and destroyed on unmount; a new `map` or `source` recreates it.
 Style, classification (compared by value), reducer, value field, aggregator and click binding are
 applied in place. Custom reducers and style functions are compared by identity: memoize them.
+
+## WFS inside the worker
+
+For large layers the cost is downloading and parsing, not grouping. `createWorkerWfsSource` keeps the
+points inside the worker: it pages the WFS there (in `EPSG:3857`, converted with an inverse Mercator),
+aggregates there, and only cells cross to the main thread. Clicked cells fetch their members from the
+worker and rebuild them as features.
+
+```ts
+import { createWorkerWfsSource } from '@ghegar/panal/ol';
+
+const source = createWorkerWfsSource(worker, { url, typeName: 'ws:points', value: 'population', reducer: 'sum' });
+createHexbinLayer({ map, source, style });
+source.setReducer('mean');
+source.getState(); // { status, loaded, truncated, error }
+```
+
+The aggregator and any number of worker sources can share one worker. Only built-in reducers work
+here.
 
 ## Development
 

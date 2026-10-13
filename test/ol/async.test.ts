@@ -128,3 +128,35 @@ describe('wfs into the layer', () => {
         expect(hexbin.layer.getSource()?.getFeatureById('87498c96effffff')?.get('count')).toBe(2);
     });
 });
+
+describe('server rollup', () => {
+    it('asks for the coarsest available resolution and rolls it up to the requested one', async () => {
+        const requests: number[] = [];
+        const source = fromCellProvider({
+            resolutions: [7],
+            rollup: 'mean',
+            load: async ({ resolution }) => {
+                requests.push(resolution);
+                return [
+                    { h3Index: '87498c96effffff', value: 10, count: 1 },
+                    { h3Index: '87498c968ffffff', value: 40, count: 3 },
+                ];
+            },
+        });
+        const hexbin = createHexbinLayer({ map: mapAt(9), source, style, resolution: { fixed: 4 } });
+        await settle();
+        expect(requests).toEqual([7]);
+        const snapshot = hexbin.getSnapshot();
+        expect(snapshot).toMatchObject({ resolution: 4, cellCount: 1 });
+        const cell = hexbin.layer.getSource()?.getFeatures()[0];
+        expect(cell?.get('value')).toBeCloseTo(32.5, 9);
+        expect(cell?.get('count')).toBe(4);
+    });
+
+    it('does not roll up without the option', async () => {
+        const source = fromCellProvider({ resolutions: [7], load: async () => [{ h3Index: '87498c96effffff', value: 1 }] });
+        const hexbin = createHexbinLayer({ map: mapAt(9), source, style, resolution: { fixed: 4 } });
+        await settle();
+        expect(hexbin.getSnapshot().resolution).toBe(7);
+    });
+});

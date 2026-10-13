@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createResolutionPicker, defaultResolutionTable } from '../../src/core/index.js';
+import { createResolutionPicker, defaultResolutionTable, latitudeZoomOffset } from '../../src/core/index.js';
 
 const table = [
     { maxZoom: 5, resolution: 3 },
@@ -69,5 +69,23 @@ describe('createResolutionPicker', () => {
         expect(picker.pick(6)).toBe(5);
         expect(() => createResolutionPicker({ table: [] })).toThrow(RangeError);
         expect(() => createResolutionPicker({ table: [{ maxZoom: 5, resolution: 3 }, { maxZoom: 5, resolution: 4 }] })).toThrow(RangeError);
+    });
+});
+
+describe('latitude correction', () => {
+    it('adds log2(1 / cos φ) to the zoom', () => {
+        expect(latitudeZoomOffset(0)).toBe(0);
+        expect(latitudeZoomOffset(60)).toBeCloseTo(1, 9);
+        expect(latitudeZoomOffset(-60)).toBeCloseTo(1, 9);
+        expect(latitudeZoomOffset(90)).toBeCloseTo(latitudeZoomOffset(85), 9);
+        expect(latitudeZoomOffset(NaN)).toBe(0);
+    });
+
+    it('picks a finer resolution at high latitude for the same zoom', () => {
+        const picker = () => createResolutionPicker({ table, hysteresis: 0 });
+        expect(picker().pick(7.5, 0)).toBe(5);
+        expect(picker().pick(7.5, 60)).toBe(7);
+        expect(picker().pick(7.5)).toBe(5);
+        expect(createResolutionPicker({ table, hysteresis: 0, latitudeCorrection: false }).pick(7.5, 60)).toBe(5);
     });
 });

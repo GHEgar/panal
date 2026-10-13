@@ -1,6 +1,6 @@
 import type { BuiltInReducer } from '@ghegar/panal';
 import type { ClassificationMethod } from '@ghegar/panal/classify';
-import type { HexbinLayer } from '@ghegar/panal/ol';
+import type { HexbinLayer, WorkerWfsSource } from '@ghegar/panal/ol';
 import { bindCellClick, createHexbinLayer } from '@ghegar/panal/ol';
 import type { AggregationWorker } from '@ghegar/panal/worker';
 import { createAggregationWorker } from '@ghegar/panal/worker';
@@ -15,6 +15,7 @@ import { renderLegend, renderSelection } from './legend.js';
 import { demoSource } from './sources.js';
 import type { DemoSource, SourceKind } from './sources.js';
 import { styleFor } from './style.js';
+import { sharedWorker } from './worker.js';
 
 const element = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const sourceInput = element<HTMLSelectElement>('source');
@@ -40,7 +41,7 @@ let unbindClick: (() => void) | null = null;
 
 const aggregator = () => {
     if (!workerInput.checked) return undefined;
-    worker ??= createAggregationWorker(new Worker(new URL('./hexbin.worker.ts', import.meta.url), { type: 'module' }));
+    worker ??= createAggregationWorker(sharedWorker());
     return worker.aggregate;
 };
 
@@ -60,12 +61,14 @@ const build = () => {
     unsubscribe?.();
     unbindClick?.();
     hexbin?.destroy();
+    current?.release?.();
     current = demoSource(sourceInput.value as SourceKind);
     map.getView().setCenter(fromLonLat(current.center));
     map.getView().setZoom(current.zoom);
     const server = sourceInput.value === 'server';
+    const remote = sourceInput.value === 'wfs-worker';
     reducerInput.disabled = server;
-    workerInput.disabled = server;
+    workerInput.disabled = server || remote;
     hexbin = createHexbinLayer({
         map,
         source: current.source,
@@ -86,7 +89,14 @@ const build = () => {
 
 sourceInput.addEventListener('change', build);
 workerInput.addEventListener('change', () => hexbin?.setAggregator(aggregator()));
-reducerInput.addEventListener('change', () => hexbin?.setReducer(reducer(), current?.value));
+reducerInput.addEventListener('change', () => {
+    const source = current?.source as Partial<WorkerWfsSource> | undefined;
+    if (source?.setReducer && reducerInput.value !== 'range') {
+        source.setReducer(reducerInput.value as BuiltInReducer, current?.value);
+        return;
+    }
+    hexbin?.setReducer(reducer(), current?.value);
+});
 methodInput.addEventListener('change', () => {
     classesInput.disabled = methodInput.value === 'stdDev';
     hexbin?.setClassification({ method: methodInput.value as ClassificationMethod });

@@ -31,13 +31,22 @@ export const defaultResolutionTable = (options: DefaultTableOptions = {}): Resol
 export interface ResolutionPickerOptions {
     table?: readonly ResolutionStep[];
     hysteresis?: number;
+    latitudeCorrection?: boolean;
 }
 
 export interface ResolutionPicker {
-    pick: (zoom: number) => number;
+    pick: (zoom: number, latitude?: number) => number;
     current: () => number | null;
     reset: () => void;
 }
+
+export const MAX_LATITUDE = 85;
+
+export const latitudeZoomOffset = (latitude: number): number => {
+    if (!Number.isFinite(latitude)) return 0;
+    const clamped = Math.min(MAX_LATITUDE, Math.abs(latitude));
+    return clamped === 0 ? 0 : -Math.log2(Math.cos((clamped * Math.PI) / 180));
+};
 
 const validateTable = (table: readonly ResolutionStep[]): ResolutionStep[] => {
     if (table.length === 0) throw new RangeError('resolution table cannot be empty');
@@ -53,6 +62,7 @@ const validateTable = (table: readonly ResolutionStep[]): ResolutionStep[] => {
 export const createResolutionPicker = (options: ResolutionPickerOptions = {}): ResolutionPicker => {
     const table = validateTable(options.table ?? defaultResolutionTable());
     const hysteresis = Math.max(0, options.hysteresis ?? 0.3);
+    const correct = options.latitudeCorrection ?? true;
     const last = table.length - 1;
     let index: number | null = null;
 
@@ -67,10 +77,11 @@ export const createResolutionPicker = (options: ResolutionPickerOptions = {}): R
         return zoom > lower && zoom <= upper;
     };
 
-    const pick = (zoom: number): number => {
-        if (!Number.isFinite(zoom)) {
+    const pick = (rawZoom: number, latitude?: number): number => {
+        if (!Number.isFinite(rawZoom)) {
             return (table[index ?? 0] as ResolutionStep).resolution;
         }
+        const zoom = correct && latitude !== undefined ? rawZoom + latitudeZoomOffset(latitude) : rawZoom;
         if (index === null || !inside(zoom, index)) index = baseIndex(zoom);
         return (table[index] as ResolutionStep).resolution;
     };

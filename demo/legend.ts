@@ -16,7 +16,7 @@ export const renderSelection = (box: HTMLElement, snapshot: HexbinSnapshot): voi
     const list = document.createElement('ul');
     list.append(...members.slice(0, 5).map((member) => {
         const item = document.createElement('li');
-        item.textContent = String(member.get('magnitude') ?? member.get('str1') ?? member.getId() ?? '—');
+        item.textContent = String(member.get('str1') ?? member.get('magnitude') ?? member.getId() ?? '—');
         return item;
     }));
     box.replaceChildren(title, detail, list);
