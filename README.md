@@ -78,6 +78,11 @@ only changes once the zoom goes `h` levels past a threshold. `pick(zoom, latitud
 `log2(1 / cos φ)` to the zoom, because Web Mercator stretches cells away from the equator; the layer
 passes the latitude of the view center. Turn it off with `latitudeCorrection: false`.
 
+With `resolution: { ..., hierarchical: true }` the layer aggregates the points once, at the finest
+resolution of the table (or `hierarchical: { base }`), and derives every coarser one with `rollup`.
+Zooming out no longer walks the points, and a zoom level always shows the same cells however it was
+reached. Custom reducers bypass it.
+
 ## OpenLayers
 
 ```ts
@@ -217,6 +222,11 @@ source.getState(); // { status, loaded, truncated, error }
 
 The aggregator and any number of worker sources can share one worker. Only built-in reducers work
 here.
+
+Add `bbox: { geometryName: 'geom', margin: 0.5 }` to download only the view, grown by `margin` on
+each side so the cells along the visible edge are complete. The box goes into the CQL as
+`BBOX(geom, …, 'EPSG:3857')`, joined with your own `cql`. While the view stays inside what was
+downloaded nothing is fetched again; leaving it fetches the new area and aborts the previous one.
 
 ## Development
 

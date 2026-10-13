@@ -5,6 +5,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.6.0] - 2026-10-13
+
+### Agregado
+
+- Modo jerárquico de la capa (`resolution.hierarchical`): agrega una vez en la resolución base y sube
+  con `rollup` al alejar; las mismas celdas en cada zoom, venga de donde venga.
+- `bbox` en `createWorkerWfsSource`: descarga solo la vista con margen, con el recuadro en el CQL, y no
+  vuelve a pedir mientras la vista quede dentro de lo descargado.
+- `finest` en el selector de resolución.
+
 ## [0.5.0] - 2026-10-13
 
 ### Agregado

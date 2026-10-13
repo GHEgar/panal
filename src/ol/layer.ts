@@ -20,6 +20,7 @@ import { cellToFeature, toInputs } from './features.js';
 import type { ValueAccessor } from './features.js';
 import { scheduleFrame } from './frame.js';
 import { produceCells } from './produce.js';
+import type { Hierarchy } from './produce.js';
 import type { Selection } from './selection.js';
 import type { CellSource } from './server.js';
 import type { HexbinSource } from './sources.js';
@@ -42,7 +43,7 @@ export interface HexbinLayerOptions {
     reducer?: Reducer<Feature> | undefined;
     aggregator?: Aggregator | undefined;
     classification?: ClassifyOptions | undefined;
-    resolution?: ResolutionPickerOptions | { fixed: number } | undefined;
+    resolution?: ((ResolutionPickerOptions | { fixed: number }) & { hierarchical?: boolean | { base: number } }) | undefined;
     layerOptions?: Omit<VectorLayerOptions<Feature, VectorSource<Feature>>, 'source' | 'style'> | undefined;
 }
 
@@ -86,6 +87,10 @@ export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
     const layer = new VectorLayer({ ...options.layerOptions, source: target });
     const fixed = options.resolution && 'fixed' in options.resolution ? clampResolution(options.resolution.fixed) : null;
     const picker = fixed === null ? createResolutionPicker(options.resolution as ResolutionPickerOptions | undefined) : null;
+    const hierarchical = options.resolution?.hierarchical;
+    const hierarchy: Hierarchy | null = hierarchical
+        ? { base: clampResolution(typeof hierarchical === 'object' ? hierarchical.base : fixed ?? (picker as NonNullable<typeof picker>).finest) }
+        : null;
     const listeners = new Set<() => void>();
 
     let style = options.style;
@@ -157,7 +162,7 @@ export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
         controller?.abort();
         const current = new AbortController();
         controller = current;
-        const produced = produceCells({ map, resolution, inputs, reducer, aggregator, cellSource, signal: current.signal });
+        const produced = produceCells({ map, resolution, inputs, reducer, aggregator, cellSource, hierarchy, signal: current.signal });
         if (!(produced.cells instanceof Promise)) {
             cells = produced.cells;
             reclassify({ resolution: produced.resolution, status: 'ready', error: null });

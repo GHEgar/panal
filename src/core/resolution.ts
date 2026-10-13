@@ -36,6 +36,7 @@ export interface ResolutionPickerOptions {
 
 export interface ResolutionPicker {
     pick: (zoom: number, latitude?: number) => number;
+    finest: number;
     current: () => number | null;
     reset: () => void;
 }
@@ -88,6 +89,7 @@ export const createResolutionPicker = (options: ResolutionPickerOptions = {}): R
 
     return {
         pick,
+        finest: Math.max(...table.map(step => step.resolution)),
         current: () => (index === null ? null : (table[index] as ResolutionStep).resolution),
         reset: () => {
             index = null;
