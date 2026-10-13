@@ -10,6 +10,7 @@ export interface WfsOptions {
     version?: '2.0.0' | '1.1.0';
     cql?: string;
     propertyNames?: readonly string[];
+    sortBy?: string;
     pageSize?: number;
     maxFeatures?: number;
     fetch?: typeof fetch;
@@ -51,6 +52,7 @@ const pageUrl = (options: WfsOptions, srsName: string, startIndex: number, count
         [modern ? 'count' : 'maxFeatures']: String(count),
     });
     if (options.cql) params.set('CQL_FILTER', options.cql);
+    if (options.sortBy) params.set('sortBy', options.sortBy);
     if (options.propertyNames?.length) params.set('propertyName', options.propertyNames.join(','));
     const separator = options.url.includes('?') ? '&' : '?';
     return `${options.url}${separator}${params.toString()}`;

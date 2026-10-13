@@ -1,16 +1,17 @@
 import type { BuiltInReducer } from '@ghegar/panal';
 import type { ClassificationMethod } from '@ghegar/panal/classify';
 import type { HexbinLayer } from '@ghegar/panal/ol';
-import { createHexbinLayer } from '@ghegar/panal/ol';
+import { bindCellClick, createHexbinLayer } from '@ghegar/panal/ol';
 import type { AggregationWorker } from '@ghegar/panal/worker';
 import { createAggregationWorker } from '@ghegar/panal/worker';
 import TileLayer from 'ol/layer/Tile.js';
 import OlMap from 'ol/Map.js';
 import { fromLonLat } from 'ol/proj.js';
+import type { Pixel } from 'ol/pixel.js';
 import OSM from 'ol/source/OSM.js';
 import View from 'ol/View.js';
 import 'ol/ol.css';
-import { renderLegend } from './legend.js';
+import { renderLegend, renderSelection } from './legend.js';
 import { demoSource } from './sources.js';
 import type { DemoSource, SourceKind } from './sources.js';
 import { styleFor } from './style.js';
@@ -23,6 +24,7 @@ const methodInput = element<HTMLSelectElement>('method');
 const classesInput = element<HTMLInputElement>('classes');
 const status = element<HTMLParagraphElement>('status');
 const legendList = element<HTMLOListElement>('legend');
+const selectionBox = element<HTMLElement>('selection');
 
 const map = new OlMap({
     target: 'map',
@@ -34,6 +36,7 @@ let worker: AggregationWorker | null = null;
 let hexbin: HexbinLayer | null = null;
 let current: DemoSource | null = null;
 let unsubscribe: (() => void) | null = null;
+let unbindClick: (() => void) | null = null;
 
 const aggregator = () => {
     if (!workerInput.checked) return undefined;
@@ -49,11 +52,13 @@ const render = () => {
     if (!hexbin || !current) return;
     const snapshot = hexbin.getSnapshot();
     renderLegend(status, legendList, snapshot, `${current.describe()}${workerInput.checked && !workerInput.disabled ? ' · worker' : ''}`);
+    renderSelection(selectionBox, snapshot);
     hexbin.layer.changed();
 };
 
 const build = () => {
     unsubscribe?.();
+    unbindClick?.();
     hexbin?.destroy();
     current = demoSource(sourceInput.value as SourceKind);
     map.getView().setCenter(fromLonLat(current.center));
@@ -67,7 +72,7 @@ const build = () => {
         value: current.value,
         reducer: reducer(),
         aggregator: aggregator(),
-        style: (_, { classIndex }) => styleFor(classIndex, hexbin?.getSnapshot().classification?.actual ?? 0),
+        style: (_, { classIndex, selected }) => styleFor(classIndex, hexbin?.getSnapshot().classification?.actual ?? 0, selected),
         classification: {
             method: methodInput.value as ClassificationMethod,
             classes: Number(classesInput.value),
@@ -75,6 +80,7 @@ const build = () => {
         resolution: { hysteresis: 0.3 },
     });
     unsubscribe = hexbin.subscribe(render);
+    unbindClick = bindCellClick(hexbin, map);
     render();
 };
 
@@ -86,6 +92,18 @@ methodInput.addEventListener('change', () => {
     hexbin?.setClassification({ method: methodInput.value as ClassificationMethod });
 });
 classesInput.addEventListener('input', () => hexbin?.setClassification({ classes: Number(classesInput.value) }));
+
+declare global {
+    interface Window {
+        panalDemo: { map: OlMap; hexbin: () => HexbinLayer | null; pixelOf: (lon: number, lat: number) => Pixel | null };
+    }
+}
+
+window.panalDemo = {
+    map,
+    hexbin: () => hexbin,
+    pixelOf: (lon, lat) => map.getPixelFromCoordinate(fromLonLat([lon, lat])),
+};
 
 const params = new URLSearchParams(location.search);
 sourceInput.value = params.get('source') ?? sourceInput.value;

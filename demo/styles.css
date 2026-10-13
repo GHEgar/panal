@@ -78,3 +78,19 @@ html, body {
     align-items: center;
     gap: 6px;
 }
+
+#selection {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+}
+
+#selection h2 {
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-family: ui-monospace, monospace;
+}
+
+#selection p, #selection ul {
+    margin: 0;
+}

@@ -17,6 +17,9 @@
         "skipLibCheck": true,
         "types": ["node"],
         "paths": {
+            "@ghegar/panal/react": [
+                "./src/react/index.ts"
+            ],
             "@ghegar/panal/worker/runtime": [
                 "./src/worker/runtime-index.ts"
             ],
@@ -37,6 +40,8 @@
     "include": [
         "src",
         "test",
-        "demo"
+        "demo",
+        "e2e",
+        "playwright.config.ts"
     ]
 }

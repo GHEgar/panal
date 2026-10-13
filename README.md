@@ -16,6 +16,7 @@ npm install @ghegar/panal
 | `@ghegar/panal` | Aggregation per cell, zoom → resolution picker, cell rings | `h3-js` (bundled dependency) |
 | `@ghegar/panal/ol` | Hexbin layer; GeoJSON, `VectorSource`, WFS and server-side cell inputs | `ol >= 10` |
 | `@ghegar/panal/worker` | Runs the aggregation in a Web Worker | a module worker |
+| `@ghegar/panal/react` | `useHexbinLayer` and `useHexbinSnapshot` | `react >= 19` |
 
 ## Classification
 
@@ -95,6 +96,22 @@ The layer reaggregates when the resolution changes on `moveend` and, at most onc
 vector source changes. Each cell feature carries `h3Index`, `value`, `count`, `classIndex` and
 `members`, and its id is the H3 index. Use `resolution: { fixed: 7 }` to pin the resolution.
 
+## Selection
+
+```ts
+import { bindCellClick } from '@ghegar/panal/ol';
+
+const unbind = bindCellClick(hexbin, map, { toggle: true });
+hexbin.select('87498c96effffff');
+hexbin.getSnapshot().selection; // { h3Index, cell, members, status, error } | null
+hexbin.cellAt(coordinate);
+```
+
+The clicked cell is found by its H3 index, not by hit-testing pixels, so it works on transparent fills
+and in tests. The style function receives `selected`. A selection survives reaggregation while its cell
+still exists. In server mode, members come from the optional `loadMembers` of the cell provider and
+the selection reports `loading` meanwhile.
+
 ## WFS
 
 ```ts
@@ -158,6 +175,19 @@ ids. Local and worker aggregation share the same code, so they return the same c
 work too, because the final reduction runs on the main thread. `hexbin.setAggregator(undefined)` goes
 back to local aggregation.
 
+## React
+
+```tsx
+import { useHexbinLayer, useHexbinSnapshot } from '@ghegar/panal/react';
+
+const hexbin = useHexbinLayer(map && { map, source, style, classification, reducer, value, selectOnClick: true });
+const snapshot = useHexbinSnapshot(hexbin);
+```
+
+The layer is created in an effect and destroyed on unmount; a new `map` or `source` recreates it.
+Style, classification (compared by value), reducer, value field, aggregator and click binding are
+applied in place. Custom reducers and style functions are compared by identity: memoize them.
+
 ## Development
 
 ```bash
@@ -166,6 +196,7 @@ npm run lint
 npm run typecheck
 npm run build
 npm run demo
+npm run e2e        # Playwright; set CDP_URL to drive an already running Chrome
 ```
 
 ## License

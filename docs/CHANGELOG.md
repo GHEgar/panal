@@ -5,6 +5,20 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.3.0] - 2026-10-13
+
+### Agregado
+
+- Selección de celdas: `cellAt` por índice H3 (sin depender del render), `select`, `bindCellClick` con
+  alternancia y `selection` en el snapshot con miembros y estado. La selección sobrevive al reagrupado
+  mientras la celda exista.
+- `loadMembers` en `fromCellProvider` para traer los miembros de una celda en modo servidor.
+- `selected` en el contexto de estilo y `setStyle` en la capa.
+- `@ghegar/panal/react`: `useHexbinLayer` y `useHexbinSnapshot`.
+- `sortBy` en `fromWfs`.
+- Espera configurable (`debounce`, 150 ms) en los pedidos por extensión del modo servidor.
+- Pruebas e2e con Playwright contra el demo; el demo muestra la celda seleccionada.
+
 ## [0.2.0] - 2026-10-13
 
 ### Agregado

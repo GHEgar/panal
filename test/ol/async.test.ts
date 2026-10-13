@@ -55,6 +55,7 @@ describe('server mode', () => {
         let call = 0;
         const source = fromCellProvider({
             extentDependent: true,
+            debounce: 0,
             load: ({ signal }) => {
                 signals.push(signal);
                 call += 1;
@@ -68,6 +69,18 @@ describe('server mode', () => {
         await settle();
         expect(signals[0]?.aborted).toBe(true);
         expect(hexbin.layer.getSource()?.getFeatureById('87498c96effffff')?.get('value')).toBe(2);
+    });
+
+    it('debounces extent requests while the resolution stays put', async () => {
+        const load = vi.fn(async () => [{ h3Index: '87498c96effffff', value: 1 }]);
+        const map = mapAt(9);
+        createHexbinLayer({ map, source: fromCellProvider({ extentDependent: true, debounce: 20, load }), style, resolution: { fixed: 7 } });
+        map.dispatchEvent('moveend');
+        map.dispatchEvent('moveend');
+        map.dispatchEvent('moveend');
+        expect(load).toHaveBeenCalledTimes(1);
+        await settle();
+        expect(load).toHaveBeenCalledTimes(2);
     });
 
     it('surfaces provider errors', async () => {

@@ -17,24 +17,36 @@ export interface ServerCell {
     count?: number;
 }
 
+export interface MembersRequest {
+    h3Index: string;
+    resolution: number;
+    signal: AbortSignal;
+}
+
 export interface CellProviderOptions {
     load: (request: CellRequest) => Promise<readonly ServerCell[]>;
+    loadMembers?: (request: MembersRequest) => Promise<Feature[]>;
     resolutions?: readonly number[];
     extentDependent?: boolean;
+    debounce?: number;
 }
 
 export interface CellSource {
     kind: 'cells';
     load: CellProviderOptions['load'];
+    loadMembers: CellProviderOptions['loadMembers'] | null;
     resolutions: readonly number[] | null;
     extentDependent: boolean;
+    debounce: number;
 }
 
 export const fromCellProvider = (options: CellProviderOptions): CellSource => ({
     kind: 'cells',
     load: options.load,
+    loadMembers: options.loadMembers ?? null,
     resolutions: options.resolutions?.length ? [...options.resolutions].sort((a, b) => a - b) : null,
     extentDependent: options.extentDependent ?? false,
+    debounce: Math.max(0, options.debounce ?? 150),
 });
 
 export const effectiveResolution = (requested: number, resolutions: readonly number[] | null): number => {

@@ -91,6 +91,14 @@ describe('fromWfs', () => {
         expect(other.getState().error?.message).toContain('JSON');
     });
 
+    it('passes sortBy through', async () => {
+        const server = fakeServer(2);
+        const source = fromWfs({ url: 'https://x/wfs', typeName: 'ws:p', sortBy: 'id ASC', fetch: server.fetch });
+        source.read('EPSG:3857');
+        await settle();
+        expect(server.calls[0]?.get('sortBy')).toBe('id ASC');
+    });
+
     it('reloads and aborts', async () => {
         const server = fakeServer(3);
         const source = fromWfs({ url: 'https://x/wfs', typeName: 'ws:p', fetch: server.fetch });
