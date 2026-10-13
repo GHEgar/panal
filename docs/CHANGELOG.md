@@ -5,6 +5,18 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.5.0] - 2026-10-13
+
+### Agregado
+
+- `getCell(h3Index)` en la capa: la celda con sus miembros y estadísticas.
+
+### Eliminado
+
+- La propiedad `members` de las features de celda. Llevaba features de OpenLayers adentro y rompía a
+  quien serializa las celdas (GeoJSON, fuentes de MapLibre). Los miembros salen de `getCell` o de la
+  selección.
+
 ## [0.4.0] - 2026-10-13
 
 ### Agregado

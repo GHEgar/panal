@@ -100,8 +100,10 @@ hexbin.destroy();
 ```
 
 The layer reaggregates when the resolution changes on `moveend` and, at most once per frame, when the
-vector source changes. Each cell feature carries `h3Index`, `value`, `count`, `classIndex` and
-`members`, and its id is the H3 index. Use `resolution: { fixed: 7 }` to pin the resolution.
+vector source changes. Each cell feature carries `h3Index`, `value`, `count` and `classIndex`, and its
+id is the H3 index. Members are not stored on the feature, so cell features stay plain data that can be
+serialized (to GeoJSON, to a MapLibre source); read them with `hexbin.getCell(h3Index)` or from the
+selection. Use `resolution: { fixed: 7 }` to pin the resolution.
 
 ## Selection
 

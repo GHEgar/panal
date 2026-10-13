@@ -5,6 +5,7 @@ import LineString from 'ol/geom/LineString.js';
 import OlMap from 'ol/Map.js';
 import { fromLonLat } from 'ol/proj.js';
 import VectorSource from 'ol/source/Vector.js';
+import GeoJSON from 'ol/format/GeoJSON.js';
 import Style from 'ol/style/Style.js';
 import View from 'ol/View.js';
 import { describe, expect, it, vi } from 'vitest';
@@ -61,7 +62,17 @@ describe('createHexbinLayer', () => {
         expect(snapshot.legend.reduce((total, entry) => total + entry.count, 0)).toBe(3);
         const gdl = hexbin.layer.getSource()?.getFeatureById('87498c96effffff');
         expect(gdl?.get('count')).toBe(2);
-        expect(gdl?.get('members')).toHaveLength(2);
+        expect(gdl?.get('members')).toBeUndefined();
+        expect(hexbin.getCell('87498c96effffff')?.members).toHaveLength(2);
+        expect(hexbin.getCell('nope')).toBeNull();
+    });
+
+    it('keeps cell features serializable', () => {
+        const { map, vector } = setup();
+        const hexbin = createHexbinLayer({ map, source: fromVectorSource(vector), style: () => new Style(), resolution: { fixed: 7 } });
+        const collection = new GeoJSON().writeFeaturesObject(hexbin.layer.getSource()?.getFeatures() ?? []);
+        expect(() => structuredClone(collection)).not.toThrow();
+        expect(collection.features[0]?.properties).toEqual(expect.objectContaining({ h3Index: expect.any(String), count: expect.any(Number) }));
     });
 
     it('passes the cell context to the consumer style', () => {

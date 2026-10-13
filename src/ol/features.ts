@@ -8,7 +8,7 @@ import type { AggregateInput, Cell, LonLat } from '../core/types.js';
 
 export type ValueAccessor = string | ((feature: Feature) => number | null | undefined);
 
-export const CELL_PROPERTIES = ['h3Index', 'value', 'count', 'classIndex', 'members'] as const;
+export const CELL_PROPERTIES = ['h3Index', 'value', 'count', 'classIndex'] as const;
 
 const readValue = (feature: Feature, accessor: ValueAccessor | undefined): number | null | undefined => {
     if (accessor === undefined) return undefined;
@@ -53,7 +53,6 @@ export const cellToFeature = (cell: Cell<Feature>, projection: ProjectionLike, c
         value: cell.value,
         count: cell.count,
         classIndex,
-        members: cell.members,
     }, true);
     return feature;
 };

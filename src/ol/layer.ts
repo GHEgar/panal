@@ -65,6 +65,7 @@ export interface HexbinLayer {
     setAggregator: (aggregator: Aggregator | undefined) => void;
     setStyle: (style: CellStyle) => void;
     cellAt: (coordinate: Coordinate) => Cell<Feature> | null;
+    getCell: (h3Index: string) => Cell<Feature> | null;
     select: (h3Index: string | null) => void;
     refresh: () => void;
     destroy: () => void;
@@ -260,6 +261,7 @@ export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
             const h3Index = cellOf(toLonLat(coordinate, projection()) as unknown as LonLat, snapshot.resolution);
             return h3Index === null ? null : byIndex.get(h3Index) ?? null;
         },
+        getCell: h3Index => byIndex.get(h3Index) ?? null,
         select: (h3Index) => {
             snapshot = { ...snapshot, selection: selectionFor(h3Index) };
             layer.changed();
