@@ -1,23 +1,23 @@
-import type { ClassificationMethod } from '@ghegar/panal/classify';
 import type { BuiltInReducer } from '@ghegar/panal';
-import { createHexbinLayer, fromVectorSource } from '@ghegar/panal/ol';
+import type { ClassificationMethod } from '@ghegar/panal/classify';
+import type { HexbinLayer } from '@ghegar/panal/ol';
+import { createHexbinLayer } from '@ghegar/panal/ol';
+import type { AggregationWorker } from '@ghegar/panal/worker';
+import { createAggregationWorker } from '@ghegar/panal/worker';
 import TileLayer from 'ol/layer/Tile.js';
 import OlMap from 'ol/Map.js';
 import { fromLonLat } from 'ol/proj.js';
 import OSM from 'ol/source/OSM.js';
-import VectorSource from 'ol/source/Vector.js';
-import Fill from 'ol/style/Fill.js';
-import Stroke from 'ol/style/Stroke.js';
-import Style from 'ol/style/Style.js';
 import View from 'ol/View.js';
 import 'ol/ol.css';
-import { syntheticPoints } from './data.js';
-
-const RAMP = ['#fff4d6', '#ffd98a', '#f7a94b', '#e2702d', '#b8401f', '#82231a', '#4d130f'];
-const OUTLINE = new Stroke({ color: 'rgba(40, 24, 10, 0.35)', width: 0.8 });
-const NO_CLASS = new Style({ fill: new Fill({ color: 'rgba(120, 120, 120, 0.3)' }), stroke: OUTLINE });
+import { renderLegend } from './legend.js';
+import { demoSource } from './sources.js';
+import type { DemoSource, SourceKind } from './sources.js';
+import { styleFor } from './style.js';
 
 const element = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
+const sourceInput = element<HTMLSelectElement>('source');
+const workerInput = element<HTMLInputElement>('worker');
 const reducerInput = element<HTMLSelectElement>('reducer');
 const methodInput = element<HTMLSelectElement>('method');
 const classesInput = element<HTMLInputElement>('classes');
@@ -30,70 +30,64 @@ const map = new OlMap({
     view: new View({ center: fromLonLat([-100.5, 21.5]), zoom: 5.5 }),
 });
 
-const points = new VectorSource({ features: syntheticPoints(20_000) });
-let actual = 5;
+let worker: AggregationWorker | null = null;
+let hexbin: HexbinLayer | null = null;
+let current: DemoSource | null = null;
+let unsubscribe: (() => void) | null = null;
 
-const color = (classIndex: number): string => {
-    const step = actual <= 1 ? 0 : Math.round((classIndex * (RAMP.length - 1)) / (actual - 1));
-    return RAMP[step] as string;
+const aggregator = () => {
+    if (!workerInput.checked) return undefined;
+    worker ??= createAggregationWorker(new Worker(new URL('./hexbin.worker.ts', import.meta.url), { type: 'module' }));
+    return worker.aggregate;
 };
 
-const styles = new Map<string, Style>();
-const styleFor = (classIndex: number): Style => {
-    if (classIndex < 0) return NO_CLASS;
-    const fill = color(classIndex);
-    let style = styles.get(fill);
-    if (!style) {
-        style = new Style({ fill: new Fill({ color: `${fill}cc` }), stroke: OUTLINE });
-        styles.set(fill, style);
-    }
-    return style;
-};
-
-const hexbin = createHexbinLayer({
-    map,
-    source: fromVectorSource(points),
-    style: (_, { classIndex }) => styleFor(classIndex),
-    classification: { method: 'quantile', classes: 5 },
-    resolution: { hysteresis: 0.3 },
-});
-
-const format = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 });
+const reducer = (): Parameters<HexbinLayer['setReducer']>[0] => reducerInput.value === 'range'
+    ? values => (values.length ? Math.max(...values) - Math.min(...values) : NaN)
+    : reducerInput.value as BuiltInReducer;
 
 const render = () => {
-    const { resolution, cellCount, classification, legend } = hexbin.getSnapshot();
-    actual = classification?.actual ?? 0;
-    const collapsed = classification && classification.actual < classification.requested ? ' (clases fundidas)' : '';
-    status.textContent = `r${resolution ?? '–'} · ${format.format(cellCount)} celdas${collapsed}`;
-    legendList.replaceChildren(...legend.map((entry) => {
-        const item = document.createElement('li');
-        const swatch = document.createElement('span');
-        swatch.className = 'swatch';
-        swatch.style.background = color(entry.classIndex);
-        const close = entry.closed === 'both' ? ']' : ')';
-        item.append(swatch, `[${format.format(entry.min)}, ${format.format(entry.max)}${close} · ${entry.count}`);
-        return item;
-    }));
+    if (!hexbin || !current) return;
+    const snapshot = hexbin.getSnapshot();
+    renderLegend(status, legendList, snapshot, `${current.describe()}${workerInput.checked && !workerInput.disabled ? ' · worker' : ''}`);
     hexbin.layer.changed();
 };
 
-hexbin.subscribe(render);
-render();
+const build = () => {
+    unsubscribe?.();
+    hexbin?.destroy();
+    current = demoSource(sourceInput.value as SourceKind);
+    map.getView().setCenter(fromLonLat(current.center));
+    map.getView().setZoom(current.zoom);
+    const server = sourceInput.value === 'server';
+    reducerInput.disabled = server;
+    workerInput.disabled = server;
+    hexbin = createHexbinLayer({
+        map,
+        source: current.source,
+        value: current.value,
+        reducer: reducer(),
+        aggregator: aggregator(),
+        style: (_, { classIndex }) => styleFor(classIndex, hexbin?.getSnapshot().classification?.actual ?? 0),
+        classification: {
+            method: methodInput.value as ClassificationMethod,
+            classes: Number(classesInput.value),
+        },
+        resolution: { hysteresis: 0.3 },
+    });
+    unsubscribe = hexbin.subscribe(render);
+    render();
+};
 
-reducerInput.addEventListener('change', () => {
-    const choice = reducerInput.value;
-    if (choice === 'range') {
-        hexbin.setReducer(values => (values.length ? Math.max(...values) - Math.min(...values) : NaN), 'magnitude');
-        return;
-    }
-    hexbin.setReducer(choice as BuiltInReducer, 'magnitude');
-});
-
+sourceInput.addEventListener('change', build);
+workerInput.addEventListener('change', () => hexbin?.setAggregator(aggregator()));
+reducerInput.addEventListener('change', () => hexbin?.setReducer(reducer(), current?.value));
 methodInput.addEventListener('change', () => {
     classesInput.disabled = methodInput.value === 'stdDev';
-    hexbin.setClassification({ method: methodInput.value as ClassificationMethod });
+    hexbin?.setClassification({ method: methodInput.value as ClassificationMethod });
 });
+classesInput.addEventListener('input', () => hexbin?.setClassification({ classes: Number(classesInput.value) }));
 
-classesInput.addEventListener('input', () => {
-    hexbin.setClassification({ classes: Number(classesInput.value) });
-});
+const params = new URLSearchParams(location.search);
+sourceInput.value = params.get('source') ?? sourceInput.value;
+workerInput.checked = params.get('worker') === '1';
+build();

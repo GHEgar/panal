@@ -1,7 +1,7 @@
 {
     "name": "@ghegar/panal",
-    "version": "0.1.0",
-    "description": "Headless H3 hexbin for OpenLayers: aggregation, zoom-driven resolution with hysteresis, classification and legend data.",
+    "version": "0.2.0",
+    "description": "Headless H3 hexbin for OpenLayers: aggregation (local, Web Worker or server), zoom-driven resolution with hysteresis, classification and legend data.",
     "license": "AGPL-3.0-only",
     "author": "Edgar Villarreal",
     "type": "module",
@@ -25,6 +25,14 @@
         "./ol": {
             "types": "./dist/ol/index.d.ts",
             "import": "./dist/ol/index.js"
+        },
+        "./worker": {
+            "types": "./dist/worker/index.d.ts",
+            "import": "./dist/worker/index.js"
+        },
+        "./worker/runtime": {
+            "types": "./dist/worker/runtime-index.d.ts",
+            "import": "./dist/worker/runtime-index.js"
         }
     },
     "scripts": {

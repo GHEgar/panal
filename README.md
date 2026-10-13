@@ -14,7 +14,8 @@ npm install @ghegar/panal
 |---|---|---|
 | `@ghegar/panal/classify` | Breaks, class of a value, legend data | nothing |
 | `@ghegar/panal` | Aggregation per cell, zoom → resolution picker, cell rings | `h3-js` (bundled dependency) |
-| `@ghegar/panal/ol` | Hexbin layer with GeoJSON and `VectorSource` inputs | `ol >= 10` |
+| `@ghegar/panal/ol` | Hexbin layer; GeoJSON, `VectorSource`, WFS and server-side cell inputs | `ol >= 10` |
+| `@ghegar/panal/worker` | Runs the aggregation in a Web Worker | a module worker |
 
 ## Classification
 
@@ -93,6 +94,69 @@ hexbin.destroy();
 The layer reaggregates when the resolution changes on `moveend` and, at most once per frame, when the
 vector source changes. Each cell feature carries `h3Index`, `value`, `count`, `classIndex` and
 `members`, and its id is the H3 index. Use `resolution: { fixed: 7 }` to pin the resolution.
+
+## WFS
+
+```ts
+import { fromWfs } from '@ghegar/panal/ol';
+
+const source = fromWfs({
+    url: 'https://example.org/geoserver/wfs',
+    typeName: 'ws:points',
+    cql: 'year = 2025',
+    propertyNames: ['the_geom', 'population'],
+    pageSize: 5000,
+    maxFeatures: 100_000,
+});
+source.getState(); // { status, loaded, truncated, error }
+```
+
+Nothing is requested until the layer reads the source. Pages are fetched as GeoJSON with
+`startIndex` and `count` (`maxFeatures` on WFS 1.1.0), in the projection of the view, so axis order
+never gets in the way. `truncated` turns true when the layer has more features than `maxFeatures`.
+
+## Server-side cells
+
+When a server already counted the points, hand panal the cells and it only classifies and draws them.
+Each cell needs its H3 index and value; the hexagon is drawn from the index, so the server does not
+have to send geometry.
+
+```ts
+import { fromCellProvider } from '@ghegar/panal/ol';
+
+const source = fromCellProvider({
+    resolutions: [3, 4, 6, 7],
+    extentDependent: false,
+    load: async ({ resolution, extent, signal }) => {
+        const response = await fetch(`/cells?r=${resolution}&bbox=${extent.join(',')}`, { signal });
+        return response.json(); // [{ h3Index, value, count? }]
+    },
+});
+```
+
+With `resolutions`, panal asks for the finest available resolution that does not exceed the one the
+zoom wants (or the coarsest when none fits). A superseded request is aborted and its answer ignored.
+`getSnapshot().status` is `loading` while waiting and `error` (with `error`) if the provider throws.
+
+## Web Worker
+
+```ts
+// hexbin.worker.ts
+import { installAggregationWorker } from '@ghegar/panal/worker/runtime';
+installAggregationWorker(self);
+```
+
+```ts
+import { createAggregationWorker } from '@ghegar/panal/worker';
+
+const worker = createAggregationWorker(new Worker(new URL('./hexbin.worker.ts', import.meta.url), { type: 'module' }));
+createHexbinLayer({ map, source, style, aggregator: worker.aggregate });
+```
+
+Coordinates travel as transferable typed arrays and the worker returns per-cell statistics and member
+ids. Local and worker aggregation share the same code, so they return the same cells; custom reducers
+work too, because the final reduction runs on the main thread. `hexbin.setAggregator(undefined)` goes
+back to local aggregation.
 
 ## Development
 

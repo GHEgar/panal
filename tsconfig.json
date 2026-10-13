@@ -17,6 +17,12 @@
         "skipLibCheck": true,
         "types": ["node"],
         "paths": {
+            "@ghegar/panal/worker/runtime": [
+                "./src/worker/runtime-index.ts"
+            ],
+            "@ghegar/panal/worker": [
+                "./src/worker/index.ts"
+            ],
             "@ghegar/panal/classify": [
                 "./src/classify/index.ts"
             ],

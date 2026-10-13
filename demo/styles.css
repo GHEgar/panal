@@ -72,3 +72,9 @@ html, body {
     border-radius: 3px;
     border: 1px solid rgba(43, 29, 18, 0.25);
 }
+
+.panel label.check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}

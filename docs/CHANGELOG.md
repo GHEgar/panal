@@ -5,6 +5,25 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.2.0] - 2026-10-13
+
+### Agregado
+
+- `fromWfs`: `GetFeature` en GeoJSON paginado con `startIndex`, `CQL_FILTER`, `propertyName`, tope
+  `maxFeatures` con aviso de truncado, estado (`idle`, `loading`, `ready`, `error`) y recarga.
+- `fromCellProvider`: modo servidor con celdas ya agregadas (`h3Index`, `value`, `count`), resoluciones
+  disponibles y pedido por extensión opcional; el hexágono se dibuja desde el índice.
+- `@ghegar/panal/worker` y `@ghegar/panal/worker/runtime`: agregación en Web Worker con arreglos
+  transferibles.
+- `packInputs`, `aggregatePacked` y `unpackCells` en el núcleo.
+- La capa acepta `aggregator` y `setAggregator`; su snapshot suma `status` y `error`. Cada pedido
+  async aborta el anterior y descarta respuestas viejas.
+- Demo: fuente WFS (`sf:bugsites`), servidor simulado, casilla de worker y preselección por URL.
+
+### Cambiado
+
+- `aggregate` empaqueta y desempaqueta por dentro: local y worker comparten el mismo camino.
+
 ## [0.1.0] - 2026-10-13
 
 ### Agregado

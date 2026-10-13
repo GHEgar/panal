@@ -32,3 +32,8 @@ export interface ResolutionStep {
     maxZoom: number;
     resolution: number;
 }
+
+export type Aggregator = <M>(
+    inputs: readonly AggregateInput<M>[],
+    options: AggregateOptions<M>,
+) => Map<string, Cell<M>> | Promise<Map<string, Cell<M>>>;

@@ -10,13 +10,15 @@ import { classify } from '../classify/classify.js';
 import { classOf } from '../classify/class-of.js';
 import { legend } from '../classify/legend.js';
 import type { Classification, ClassifyOptions, LegendEntry } from '../classify/types.js';
-import { aggregate, clampResolution } from '../core/aggregate.js';
+import { clampResolution } from '../core/aggregate.js';
 import { createResolutionPicker } from '../core/resolution.js';
 import type { ResolutionPickerOptions } from '../core/resolution.js';
-import type { AggregateInput, Cell, Reducer } from '../core/types.js';
+import type { AggregateInput, Aggregator, Cell, Reducer } from '../core/types.js';
 import { cellToFeature, toInputs } from './features.js';
 import type { ValueAccessor } from './features.js';
 import { scheduleFrame } from './frame.js';
+import { produceCells } from './produce.js';
+import type { CellSource } from './server.js';
 import type { HexbinSource } from './sources.js';
 
 export interface CellStyleContext {
@@ -30,10 +32,11 @@ export type CellStyle = (feature: FeatureLike, context: CellStyleContext) => Sty
 
 export interface HexbinLayerOptions {
     map: OlMap;
-    source: HexbinSource;
+    source: HexbinSource | CellSource;
     style: CellStyle;
     value?: ValueAccessor;
     reducer?: Reducer<Feature>;
+    aggregator?: Aggregator | undefined;
     classification?: ClassifyOptions;
     resolution?: ResolutionPickerOptions | { fixed: number };
     layerOptions?: Omit<VectorLayerOptions<Feature, VectorSource<Feature>>, 'source' | 'style'>;
@@ -44,6 +47,8 @@ export interface HexbinSnapshot {
     cellCount: number;
     classification: Classification | null;
     legend: LegendEntry[];
+    status: 'ready' | 'loading' | 'error';
+    error: Error | null;
 }
 
 export interface HexbinLayer {
@@ -52,14 +57,20 @@ export interface HexbinLayer {
     subscribe: (listener: () => void) => () => void;
     setClassification: (options: Partial<ClassifyOptions>) => void;
     setReducer: (reducer: Reducer<Feature>, value?: ValueAccessor) => void;
+    setAggregator: (aggregator: Aggregator | undefined) => void;
     refresh: () => void;
     destroy: () => void;
 }
 
 const DEFAULT_CLASSIFICATION: ClassifyOptions = { method: 'quantile', classes: 5 };
 
+const isCellSource = (source: HexbinSource | CellSource): source is CellSource =>
+    (source as CellSource).kind === 'cells';
+
 export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
-    const { map, source, style } = options;
+    const { map, style } = options;
+    const cellSource = isCellSource(options.source) ? options.source : null;
+    const pointSource = isCellSource(options.source) ? null : options.source;
     const target = new VectorSource<Feature>();
     const layer = new VectorLayer({ ...options.layerOptions, source: target });
     const fixed = options.resolution && 'fixed' in options.resolution ? clampResolution(options.resolution.fixed) : null;
@@ -68,10 +79,15 @@ export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
 
     let value = options.value;
     let reducer: Reducer<Feature> = options.reducer ?? 'count';
+    let aggregator = options.aggregator;
     let classifyOptions: ClassifyOptions = options.classification ?? DEFAULT_CLASSIFICATION;
     let inputs: AggregateInput<Feature>[] = [];
     let cells: Cell<Feature>[] = [];
-    let snapshot: HexbinSnapshot = { resolution: null, cellCount: 0, classification: null, legend: [] };
+    let requested: number | null = null;
+    let controller: AbortController | null = null;
+    let snapshot: HexbinSnapshot = {
+        resolution: null, cellCount: 0, classification: null, legend: [], status: 'ready', error: null,
+    };
     let cancelFrame: (() => void) | null = null;
 
     const projection = () => map.getView().getProjection();
@@ -84,36 +100,56 @@ export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
         classIndex: feature.get('classIndex') as number,
     }));
 
-    const reclassify = () => {
+    const reclassify = (patch: Partial<HexbinSnapshot> = {}) => {
         const values = cells.map(cell => cell.value);
         const classification = classify(values, classifyOptions);
         const features = cells.map(cell => cellToFeature(cell, projection(), classOf(cell.value, classification.breaks)));
         target.clear(true);
         target.addFeatures(features);
-        snapshot = { ...snapshot, cellCount: cells.length, classification, legend: legend(classification, values) };
+        snapshot = { ...snapshot, ...patch, cellCount: cells.length, classification, legend: legend(classification, values) };
         emit();
     };
 
-    const reaggregate = (resolution: number) => {
-        cells = [...aggregate(inputs, { resolution, reducer }).values()];
-        snapshot = { ...snapshot, resolution };
-        reclassify();
+    const update = (resolution: number) => {
+        requested = resolution;
+        controller?.abort();
+        const current = new AbortController();
+        controller = current;
+        const produced = produceCells({
+            map, resolution, inputs, reducer, aggregator, cellSource, signal: current.signal,
+        });
+        if (!(produced.cells instanceof Promise)) {
+            cells = produced.cells;
+            reclassify({ resolution: produced.resolution, status: 'ready', error: null });
+            return;
+        }
+        snapshot = { ...snapshot, status: 'loading', error: null };
+        emit();
+        produced.cells.then((next) => {
+            if (controller !== current) return;
+            cells = next;
+            reclassify({ resolution: produced.resolution, status: 'ready', error: null });
+        }, (error: unknown) => {
+            if (controller !== current || current.signal.aborted) return;
+            snapshot = { ...snapshot, status: 'error', error: error instanceof Error ? error : new Error(String(error)) };
+            emit();
+        });
     };
 
     const currentResolution = (): number => fixed ?? (picker as NonNullable<typeof picker>).pick(map.getView().getZoom() ?? NaN);
 
     const readInputs = () => {
-        inputs = toInputs(source.read(projection()), projection(), value);
+        if (pointSource) inputs = toInputs(pointSource.read(projection()), projection(), value);
     };
 
     const refresh = () => {
         readInputs();
-        reaggregate(currentResolution());
+        update(currentResolution());
     };
 
     const onMoveEnd = () => {
         const resolution = currentResolution();
-        if (resolution !== snapshot.resolution) reaggregate(resolution);
+        if (resolution !== requested || cellSource?.extentDependent) update(resolution);
     };
 
     const onSourceChange = () => {
@@ -125,7 +161,7 @@ export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
     };
 
     const moveKey = map.on('moveend', onMoveEnd);
-    const unsubscribeSource = source.subscribe(onSourceChange);
+    const unsubscribeSource = pointSource ? pointSource.subscribe(onSourceChange) : () => undefined;
     map.addLayer(layer);
     refresh();
 
@@ -146,11 +182,17 @@ export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
                 value = nextValue;
                 readInputs();
             }
-            reaggregate(snapshot.resolution ?? currentResolution());
+            update(requested ?? currentResolution());
+        },
+        setAggregator: (next) => {
+            aggregator = next;
+            update(requested ?? currentResolution());
         },
         refresh,
         destroy: () => {
             cancelFrame?.();
+            controller?.abort();
+            controller = null;
             unByKey(moveKey);
             unsubscribeSource();
             map.removeLayer(layer);

@@ -10,6 +10,14 @@
         <div id="map"></div>
         <aside class="panel">
             <h1>panal</h1>
+            <label>Fuente
+                <select id="source">
+                    <option value="synthetic">20 000 puntos sintéticos</option>
+                    <option value="wfs">WFS sf:bugsites (gs-stable)</option>
+                    <option value="server">Servidor simulado (r3–r7)</option>
+                </select>
+            </label>
+            <label class="check"><input id="worker" type="checkbox" /> Agregar en Web Worker</label>
             <label>Agregación
                 <select id="reducer">
                     <option value="count">Conteo</option>
