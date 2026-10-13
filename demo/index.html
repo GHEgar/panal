@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>panal demo</title>
+        <link rel="stylesheet" href="./styles.css" />
+    </head>
+    <body>
+        <div id="map"></div>
+        <aside class="panel">
+            <h1>panal</h1>
+            <label>Agregación
+                <select id="reducer">
+                    <option value="count">Conteo</option>
+                    <option value="sum">Suma</option>
+                    <option value="mean">Promedio</option>
+                    <option value="min">Mínimo</option>
+                    <option value="max">Máximo</option>
+                    <option value="range">Rango (propia)</option>
+                </select>
+            </label>
+            <label>Clasificación
+                <select id="method">
+                    <option value="quantile">Cuantiles</option>
+                    <option value="jenks">Jenks</option>
+                    <option value="equalInterval">Intervalos iguales</option>
+                    <option value="stdDev">Desviación estándar</option>
+                </select>
+            </label>
+            <label>Clases
+                <input id="classes" type="range" min="2" max="7" value="5" />
+            </label>
+            <p id="status"></p>
+            <ol id="legend"></ol>
+        </aside>
+        <script type="module" src="./main.ts"></script>
+    </body>
+</html>

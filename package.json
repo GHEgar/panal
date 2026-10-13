@@ -1,0 +1,61 @@
+{
+    "name": "@ghegar/panal",
+    "version": "0.1.0",
+    "description": "Headless H3 hexbin for OpenLayers: aggregation, zoom-driven resolution with hysteresis, classification and legend data.",
+    "license": "AGPL-3.0-only",
+    "author": "Edgar Villarreal",
+    "type": "module",
+    "sideEffects": false,
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/GHEgar/panal.git"
+    },
+    "files": [
+        "dist"
+    ],
+    "exports": {
+        ".": {
+            "types": "./dist/core/index.d.ts",
+            "import": "./dist/core/index.js"
+        },
+        "./classify": {
+            "types": "./dist/classify/index.d.ts",
+            "import": "./dist/classify/index.js"
+        },
+        "./ol": {
+            "types": "./dist/ol/index.d.ts",
+            "import": "./dist/ol/index.js"
+        }
+    },
+    "scripts": {
+        "build": "rm -rf dist && tsc -p tsconfig.build.json",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "lint": "eslint .",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "demo": "vite --config demo/vite.config.ts",
+        "demo:build": "vite build --config demo/vite.config.ts"
+    },
+    "dependencies": {
+        "h3-js": "^4.5.0"
+    },
+    "peerDependencies": {
+        "ol": ">=10"
+    },
+    "peerDependenciesMeta": {
+        "ol": {
+            "optional": true
+        }
+    },
+    "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@types/node": "^24.0.0",
+        "eslint": "^10.12.0",
+        "happy-dom": "^20.14.5",
+        "ol": "^10.11.0",
+        "typescript": "~6.0.3",
+        "typescript-eslint": "^8.71.1",
+        "vite": "^8.3.4",
+        "vitest": "^5.0.3"
+    }
+}
