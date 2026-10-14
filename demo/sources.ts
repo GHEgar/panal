@@ -24,7 +24,7 @@ const synthetic = (): DemoSource => ({
     center: MEXICO,
     zoom: 5.5,
     value: 'magnitude',
-    describe: () => '20 000 puntos',
+    describe: () => '20,000 points',
 });
 
 const wfs = (): DemoSource => {
@@ -40,7 +40,7 @@ const wfs = (): DemoSource => {
         value: 'cat',
         describe: () => {
             const { status, loaded, error } = source.getState();
-            return status === 'error' ? `WFS: ${error?.message ?? 'error'}` : `WFS ${status}: ${loaded} puntos`;
+            return status === 'error' ? `WFS: ${error?.message ?? 'error'}` : `WFS ${status}: ${loaded} points`;
         },
     };
 };
@@ -59,7 +59,7 @@ const wfsWorker = (): DemoSource => {
         value: 'cat',
         describe: () => {
             const { status, loaded, error } = source.getState();
-            return status === 'error' ? `WFS: ${error?.message ?? 'error'}` : `WFS en worker ${status}: ${loaded} puntos`;
+            return status === 'error' ? `WFS: ${error?.message ?? 'error'}` : `WFS in worker ${status}: ${loaded} points`;
         },
         release: () => source.release(),
     };
@@ -80,7 +80,7 @@ const server = (): DemoSource => {
         center: MEXICO,
         zoom: 5.5,
         value: 'magnitude',
-        describe: () => 'servidor simulado: suma de magnitud, 400 ms',
+        describe: () => 'simulated server: sum of magnitude, 400 ms',
     };
 };
 

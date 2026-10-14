@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,34 +10,34 @@
         <div id="map"></div>
         <aside class="panel">
             <h1>panal</h1>
-            <label>Fuente
+            <label>Source
                 <select id="source">
-                    <option value="synthetic">20 000 puntos sintéticos</option>
+                    <option value="synthetic">20,000 synthetic points</option>
                     <option value="wfs">WFS sf:bugsites (gs-stable)</option>
-                    <option value="wfs-worker">WFS sf:bugsites en el worker</option>
-                    <option value="server">Servidor simulado (r3–r7)</option>
+                    <option value="wfs-worker">WFS sf:bugsites in the worker</option>
+                    <option value="server">Simulated server (r3–r7)</option>
                 </select>
             </label>
-            <label class="check"><input id="worker" type="checkbox" /> Agregar en Web Worker</label>
-            <label>Agregación
+            <label class="check"><input id="worker" type="checkbox" /> Aggregate in a Web Worker</label>
+            <label>Aggregation
                 <select id="reducer">
-                    <option value="count">Conteo</option>
-                    <option value="sum">Suma</option>
-                    <option value="mean">Promedio</option>
-                    <option value="min">Mínimo</option>
-                    <option value="max">Máximo</option>
-                    <option value="range">Rango (propia)</option>
+                    <option value="count">Count</option>
+                    <option value="sum">Sum</option>
+                    <option value="mean">Mean</option>
+                    <option value="min">Minimum</option>
+                    <option value="max">Maximum</option>
+                    <option value="range">Range (custom)</option>
                 </select>
             </label>
-            <label>Clasificación
+            <label>Classification
                 <select id="method">
-                    <option value="quantile">Cuantiles</option>
+                    <option value="quantile">Quantiles</option>
                     <option value="jenks">Jenks</option>
-                    <option value="equalInterval">Intervalos iguales</option>
-                    <option value="stdDev">Desviación estándar</option>
+                    <option value="equalInterval">Equal intervals</option>
+                    <option value="stdDev">Standard deviation</option>
                 </select>
             </label>
-            <label>Clases
+            <label>Classes
                 <input id="classes" type="range" min="2" max="7" value="5" />
             </label>
             <p id="status"></p>

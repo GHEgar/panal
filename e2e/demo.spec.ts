@@ -4,8 +4,8 @@ import { expect, test } from './fixtures.js';
 const open = async (page: Page, query: string) => {
     await page.route(/tile\.openstreetmap\.org/, route => route.abort());
     await page.goto(`/?${query}`);
-    await expect(page.locator('#status')).toContainText('celdas');
-    await expect(page.locator('#status')).not.toContainText('cargando');
+    await expect(page.locator('#status')).toContainText('cells');
+    await expect(page.locator('#status')).not.toContainText('loading');
 };
 
 const legendText = (page: Page) => page.locator('#legend li').allTextContents();
@@ -20,7 +20,7 @@ const clickAt = async (page: Page, lon: number, lat: number) => {
 
 test('draws the synthetic points with a five class legend', async ({ page }) => {
     await open(page, 'source=synthetic');
-    await expect(page.locator('#status')).toContainText('r3 · 20 celdas');
+    await expect(page.locator('#status')).toContainText('r3 · 20 cells');
     await expect(page.locator('#legend li')).toHaveCount(5);
     const features = await page.evaluate(() => window.panalDemo.hexbin()?.layer.getSource()?.getFeatures().length);
     expect(features).toBe(20);
@@ -41,10 +41,10 @@ test('selects a cell on click and toggles it off', async ({ page }) => {
     await open(page, 'source=synthetic');
     await clickAt(page, -99.13, 19.43);
     await expect(page.locator('#selection')).toBeVisible();
-    await expect(page.locator('#selection p')).toContainText('puntos');
+    await expect(page.locator('#selection p')).toContainText('points');
     const selected = await page.evaluate(() => window.panalDemo.hexbin()?.getSnapshot().selection?.cell.count);
     expect(selected).toBeGreaterThan(0);
-    await expect(page.locator('#selection p')).toContainText(`${selected} puntos`);
+    await expect(page.locator('#selection p')).toContainText(`${selected} points`);
     await clickAt(page, -99.13, 19.43);
     await expect(page.locator('#selection')).toBeHidden();
 });
@@ -64,15 +64,15 @@ test('the worker gives the same legend as local aggregation', async ({ page }) =
     await expect(page.locator('#status')).toContainText('worker');
     expect(await legendText(page)).toEqual(local);
     await page.selectOption('#reducer', 'mean');
-    await expect(page.locator('#status')).not.toContainText('cargando');
+    await expect(page.locator('#status')).not.toContainText('loading');
     await expect.poll(() => legendText(page)).not.toEqual(local);
 });
 
 test('server mode loads cells asynchronously', async ({ page }) => {
     await page.route(/tile\.openstreetmap\.org/, route => route.abort());
     await page.goto('/?source=server');
-    await expect(page.locator('#status')).toContainText('cargando');
-    await expect(page.locator('#status')).toContainText('r3 · 20 celdas');
+    await expect(page.locator('#status')).toContainText('loading');
+    await expect(page.locator('#status')).toContainText('r3 · 20 cells');
     await expect(page.locator('#reducer')).toBeDisabled();
 });
 
@@ -94,10 +94,10 @@ test('downloads the WFS inside the worker and selects a cell with its members', 
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ type: 'FeatureCollection', numberMatched: 3, features }) });
     });
     await page.goto('/?source=wfs-worker');
-    await expect(page.locator('#status')).toContainText('WFS en worker ready: 3 puntos');
+    await expect(page.locator('#status')).toContainText('WFS in worker ready: 3 points');
     expect(requests).toEqual(['EPSG:3857']);
     await expect(page.locator('#worker')).toBeDisabled();
     await clickAt(page, -103.7, 44.45);
-    await expect(page.locator('#selection p')).toContainText('2 puntos');
+    await expect(page.locator('#selection p')).toContainText('2 points');
     await expect(page.locator('#selection li').first()).toHaveText('site 0');
 });
