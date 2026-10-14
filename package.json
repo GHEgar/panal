@@ -2,6 +2,17 @@
     "name": "@ghegar/panal",
     "version": "0.6.1",
     "description": "Headless H3 hexbin for OpenLayers: local, worker or server aggregation, zoom-driven resolution and classification.",
+    "keywords": [
+        "openlayers",
+        "h3",
+        "hexbin",
+        "hexagon",
+        "aggregation",
+        "choropleth",
+        "web-worker",
+        "headless",
+        "gis"
+    ],
     "license": "AGPL-3.0-only",
     "author": "Edgar Villarreal",
     "type": "module",
