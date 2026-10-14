@@ -1,7 +1,7 @@
 {
     "name": "@ghegar/panal",
     "version": "0.6.1",
-    "description": "Headless H3 hexbin for OpenLayers: aggregation (local, Web Worker or server), zoom-driven resolution with hysteresis, classification and legend data.",
+    "description": "Headless H3 hexbin for OpenLayers: local, worker or server aggregation, zoom-driven resolution and classification.",
     "license": "AGPL-3.0-only",
     "author": "Edgar Villarreal",
     "type": "module",
