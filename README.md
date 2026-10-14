@@ -79,9 +79,8 @@ legend(result, values);
   maximum is kept as `[max, max]`.
 - Non-finite values are ignored and get class `-1`.
 
-`test/fixtures/classify/*.json` holds reference vectors to check other implementations against: input
-values (non-finite ones as the strings `"NaN"` and `"Infinity"`), options and expected breaks with a
-relative tolerance.
+`test/fixtures/classify/*.json` holds reference vectors for other implementations: input values
+(non-finite ones as `"NaN"` and `"Infinity"`), options and expected breaks with a relative tolerance.
 
 ## Aggregation and resolution
 
@@ -129,9 +128,7 @@ The layer adds itself to `map`, defaults to `reducer: 'count'`, quantiles in 5 c
 vector source changes. Each cell feature carries `h3Index`, `value`, `count` and `classIndex`, and its id
 is the H3 index. Members are not stored on the feature, so cell features stay plain data that can be
 serialized (to GeoJSON, to a MapLibre source); read them with `getCell(h3Index)`, `cellAt(coordinate)`
-or from `getSnapshot().selection`.
-
-The selection, `{ h3Index, cell, members, status, error } | null`, is set with `select(h3Index)` or a
+or from `getSnapshot().selection`. The selection, `{ h3Index, cell, members, status, error } | null`, is set with `select(h3Index)` or a
 click. The clicked cell is found by its H3 index, not by hit-testing pixels, so it works on transparent
 fills and in tests. It survives reaggregation while its cell still exists. In server mode, members come
 from the optional `loadMembers` of the cell provider and the selection reports `loading` meanwhile.
@@ -161,10 +158,7 @@ import { fromCellProvider } from '@ghegar/panal/ol';
 const source = fromCellProvider({
     resolutions: [3, 4, 6, 7],
     extentDependent: false,
-    load: async ({ resolution, extent, signal }) => {
-        const response = await fetch(`/cells?r=${resolution}&bbox=${extent.join(',')}`, { signal });
-        return response.json();
-    },
+    load: ({ resolution, extent, signal }) => fetch(`/cells?r=${resolution}&bbox=${extent.join(',')}`, { signal }).then(r => r.json()),
 });
 ```
 
@@ -191,25 +185,18 @@ const worker = createAggregationWorker(thread);
 createHexbinLayer({ map, source, style, aggregator: worker.aggregate });
 ```
 
-The first block is your `hexbin.worker.ts`, compiled with the `WebWorker` lib. Coordinates travel as transferable typed arrays and the
-worker returns per-cell statistics and member ids. Local and worker aggregation share the same code, so
-they return the same cells; custom reducers work too, because the final reduction runs on the main
-thread. `hexbin.setAggregator(undefined)` goes back to local aggregation.
+The first block is your `hexbin.worker.ts`, compiled with the `WebWorker` lib. Coordinates travel as
+transferable typed arrays and the worker returns per-cell statistics and member ids. Local and worker
+aggregation share the same code, so they return the same cells; custom reducers work too, because the
+final reduction runs on the main thread. `hexbin.setAggregator(undefined)` goes back to local aggregation.
 
 ### WFS inside the worker
 
-For large layers the cost is downloading and parsing, not grouping. `createWorkerWfsSource` pages the
-WFS inside the worker (in `EPSG:3857`, converted with an inverse Mercator), aggregates there, and only
-cells cross to the main thread. Clicked cells fetch their members from the worker and rebuild them as
-features.
-
-```ts
-import { createWorkerWfsSource } from '@ghegar/panal/ol';
-
-const source = createWorkerWfsSource(thread, { url, typeName: 'ws:points', value: 'population', reducer: 'sum' });
-createHexbinLayer({ map, source, style });
-source.setReducer('mean');
-```
+For large layers the cost is downloading and parsing, not grouping.
+`createWorkerWfsSource(thread, { url, typeName, value, reducer })` pages the WFS inside the worker (in
+`EPSG:3857`, converted with an inverse Mercator), aggregates there, and only cells cross to the main
+thread; pass it as the layer `source` and change the reducer with `source.setReducer('mean')`. Clicked
+cells fetch their members from the worker and rebuild them as features.
 
 The aggregator and any number of worker sources can share one `Worker`; `getState()` works as in
 `fromWfs`. Add `bbox: { geometryName: 'geom', margin: 0.5 }` to download only the view, grown by
