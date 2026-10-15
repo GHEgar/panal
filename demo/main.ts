@@ -11,6 +11,7 @@ import type { Pixel } from 'ol/pixel.js';
 import OSM from 'ol/source/OSM.js';
 import View from 'ol/View.js';
 import 'ol/ol.css';
+import '@npmegar/rotulo';
 import { renderLegend, renderSelection } from './legend.js';
 import { demoSource } from './sources.js';
 import type { DemoSource, SourceKind } from './sources.js';
