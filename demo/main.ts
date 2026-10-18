@@ -1,9 +1,9 @@
-import type { BuiltInReducer } from '@ghegar/panal';
-import type { ClassificationMethod } from '@ghegar/panal/classify';
-import type { HexbinLayer, WorkerWfsSource } from '@ghegar/panal/ol';
-import { bindCellClick, createHexbinLayer } from '@ghegar/panal/ol';
-import type { AggregationWorker } from '@ghegar/panal/worker';
-import { createAggregationWorker } from '@ghegar/panal/worker';
+import type { BuiltInReducer } from '@npmegar/panal';
+import type { ClassificationMethod } from '@npmegar/panal/classify';
+import type { HexbinLayer, WorkerWfsSource } from '@npmegar/panal/ol';
+import { bindCellClick, createHexbinLayer } from '@npmegar/panal/ol';
+import type { AggregationWorker } from '@npmegar/panal/worker';
+import { createAggregationWorker } from '@npmegar/panal/worker';
 import TileLayer from 'ol/layer/Tile.js';
 import OlMap from 'ol/Map.js';
 import { fromLonLat } from 'ol/proj.js';

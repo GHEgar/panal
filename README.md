@@ -1,7 +1,7 @@
 # <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-dark.svg"><img src=".github/assets/icon-light.svg" width="36" height="36" alt=""></picture> panal
 
-[![npm](https://img.shields.io/npm/v/@ghegar/panal)](https://www.npmjs.com/package/@ghegar/panal)
-[![size](https://img.shields.io/bundlejs/size/@ghegar/panal)](https://bundlejs.com/?q=@ghegar/panal)
+[![npm](https://img.shields.io/npm/v/@npmegar/panal)](https://www.npmjs.com/package/@npmegar/panal)
+[![size](https://img.shields.io/bundlejs/size/@npmegar/panal)](https://bundlejs.com/?q=@npmegar/panal)
 [![license](https://img.shields.io/github/license/GHEgar/panal)](LICENSE)
 
 Headless H3 hexbin for OpenLayers: local, worker or server aggregation, zoom-driven resolution and classification.
@@ -19,22 +19,22 @@ Web Worker or by your server.
 ## Install
 
 ```bash
-npm install @ghegar/panal
+npm install @npmegar/panal
 ```
 
 | Entry | What it is | Needs |
 |---|---|---|
-| `@ghegar/panal/classify` | Breaks, class of a value, legend data | nothing |
-| `@ghegar/panal` | Aggregation per cell, rollup, zoom → resolution picker, cell rings | `h3-js` (bundled dependency) |
-| `@ghegar/panal/ol` | Hexbin layer, selection; GeoJSON, `VectorSource`, WFS and server-side cell inputs | `ol >= 10` |
-| `@ghegar/panal/worker` | Client that runs the aggregation in a Web Worker | a module worker |
-| `@ghegar/panal/worker/runtime` | `installAggregationWorker(self)` for your worker file | `h3-js` |
-| `@ghegar/panal/react` | `useHexbinLayer` and `useHexbinSnapshot` | `react >= 19` |
+| `@npmegar/panal/classify` | Breaks, class of a value, legend data | nothing |
+| `@npmegar/panal` | Aggregation per cell, rollup, zoom → resolution picker, cell rings | `h3-js` (bundled dependency) |
+| `@npmegar/panal/ol` | Hexbin layer, selection; GeoJSON, `VectorSource`, WFS and server-side cell inputs | `ol >= 10` |
+| `@npmegar/panal/worker` | Client that runs the aggregation in a Web Worker | a module worker |
+| `@npmegar/panal/worker/runtime` | `installAggregationWorker(self)` for your worker file | `h3-js` |
+| `@npmegar/panal/react` | `useHexbinLayer` and `useHexbinSnapshot` | `react >= 19` |
 
 ## Quick start
 
 ```ts
-import { createHexbinLayer, fromVectorSource } from '@ghegar/panal/ol';
+import { createHexbinLayer, fromVectorSource } from '@npmegar/panal/ol';
 import { Fill, Style } from 'ol/style.js';
 
 const colors = ['#fde8d0', '#f9b97c', '#ef7d43', '#b8442a', '#5a1a14'];
@@ -53,7 +53,7 @@ hexbin.subscribe(() => renderLegend(hexbin.getSnapshot().legend));
 ## Classification
 
 ```ts
-import { classify, classOf, legend } from '@ghegar/panal/classify';
+import { classify, classOf, legend } from '@npmegar/panal/classify';
 
 const result = classify(values, { method: 'jenks', classes: 5 });
 classOf(42, result.breaks);
@@ -85,7 +85,7 @@ legend(result, values);
 ## Aggregation and resolution
 
 ```ts
-import { aggregate, createResolutionPicker } from '@ghegar/panal';
+import { aggregate, createResolutionPicker } from '@npmegar/panal';
 
 const cells = aggregate([{ coordinates: [[-103.35, 20.67]], member: 'a', value: 12 }], { resolution: 7, reducer: 'mean' });
 const picker = createResolutionPicker({ hysteresis: 0.3 });
@@ -107,7 +107,7 @@ member with several coordinates (a multipoint) counts once in every cell it touc
 ## OpenLayers
 
 ```ts
-import { bindCellClick, createHexbinLayer, fromVectorSource } from '@ghegar/panal/ol';
+import { bindCellClick, createHexbinLayer, fromVectorSource } from '@npmegar/panal/ol';
 
 const hexbin = createHexbinLayer({
     map,
@@ -153,7 +153,7 @@ true when the layer has more features than `maxFeatures`.
 ### Server-side cells
 
 ```ts
-import { fromCellProvider } from '@ghegar/panal/ol';
+import { fromCellProvider } from '@npmegar/panal/ol';
 
 const source = fromCellProvider({
     resolutions: [3, 4, 6, 7],
@@ -173,12 +173,12 @@ provider throws.
 ## Web Worker
 
 ```ts
-import { installAggregationWorker } from '@ghegar/panal/worker/runtime';
+import { installAggregationWorker } from '@npmegar/panal/worker/runtime';
 installAggregationWorker(self);
 ```
 
 ```ts
-import { createAggregationWorker } from '@ghegar/panal/worker';
+import { createAggregationWorker } from '@npmegar/panal/worker';
 
 const thread = new Worker(new URL('./hexbin.worker.ts', import.meta.url), { type: 'module' });
 const worker = createAggregationWorker(thread);
@@ -209,7 +209,7 @@ view before downloading it.
 ## React
 
 ```tsx
-import { useHexbinLayer, useHexbinSnapshot } from '@ghegar/panal/react';
+import { useHexbinLayer, useHexbinSnapshot } from '@npmegar/panal/react';
 
 const hexbin = useHexbinLayer(map && { map, source, style, classification, reducer, value, selectOnClick: true });
 const snapshot = useHexbinSnapshot(hexbin);

@@ -1,6 +1,6 @@
-import { aggregate } from '@ghegar/panal';
-import type { HexbinSource, CellSource } from '@ghegar/panal/ol';
-import { createWorkerWfsSource, fromCellProvider, fromVectorSource, fromWfs, toInputs } from '@ghegar/panal/ol';
+import { aggregate } from '@npmegar/panal';
+import type { HexbinSource, CellSource } from '@npmegar/panal/ol';
+import { createWorkerWfsSource, fromCellProvider, fromVectorSource, fromWfs, toInputs } from '@npmegar/panal/ol';
 import VectorSource from 'ol/source/Vector.js';
 import { syntheticPoints } from './data.js';
 import { sharedWorker } from './worker.js';

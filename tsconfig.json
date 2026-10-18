@@ -17,22 +17,22 @@
         "skipLibCheck": true,
         "types": ["node"],
         "paths": {
-            "@ghegar/panal/react": [
+            "@npmegar/panal/react": [
                 "./src/react/index.ts"
             ],
-            "@ghegar/panal/worker/runtime": [
+            "@npmegar/panal/worker/runtime": [
                 "./src/worker/runtime-index.ts"
             ],
-            "@ghegar/panal/worker": [
+            "@npmegar/panal/worker": [
                 "./src/worker/index.ts"
             ],
-            "@ghegar/panal/classify": [
+            "@npmegar/panal/classify": [
                 "./src/classify/index.ts"
             ],
-            "@ghegar/panal/ol": [
+            "@npmegar/panal/ol": [
                 "./src/ol/index.ts"
             ],
-            "@ghegar/panal": [
+            "@npmegar/panal": [
                 "./src/core/index.ts"
             ]
         }

@@ -1,5 +1,5 @@
 {
-    "name": "@ghegar/panal",
+    "name": "@npmegar/panal",
     "version": "0.6.1",
     "description": "Headless H3 hexbin for OpenLayers: local, worker or server aggregation, zoom-driven resolution and classification.",
     "keywords": [
@@ -99,5 +99,8 @@
         "eslint-plugin-jsx-a11y": {
             "eslint": "$eslint"
         }
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }

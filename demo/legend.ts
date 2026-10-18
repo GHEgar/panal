@@ -1,4 +1,4 @@
-import type { HexbinSnapshot } from '@ghegar/panal/ol';
+import type { HexbinSnapshot } from '@npmegar/panal/ol';
 import { colorFor } from './style.js';
 
 const format = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
