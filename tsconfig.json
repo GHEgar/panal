@@ -29,6 +29,9 @@
             "@npmegar/panal/classify": [
                 "./src/classify/index.ts"
             ],
+            "@npmegar/panal/deckgl": [
+                "./src/deckgl/index.ts"
+            ],
             "@npmegar/panal/ol": [
                 "./src/ol/index.ts"
             ],

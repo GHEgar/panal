@@ -13,8 +13,8 @@ Headless H3 hexbin for OpenLayers: local, worker or server aggregation, zoom-dri
 panal owns the numbers — the [H3](https://h3geo.org) cell of each point, the value of each cell (count,
 sum, mean, min, max or your own function), the resolution for the zoom with hysteresis, the class breaks
 and the legend as data — and you own every pixel: it ships no colors and no CSS, only a style function
-that receives `classIndex`, `value`, `count` and `selected`. Points are grouped on the main thread, in a
-Web Worker or by your server.
+that receives `classIndex`, `value`, `count` and `selected`, or a deck.gl layer that takes your colors.
+Points are grouped on the main thread, in a Web Worker or by your server.
 
 ## Install
 
@@ -27,6 +27,7 @@ npm install @npmegar/panal
 | `@npmegar/panal/classify` | Breaks, class of a value, legend data | nothing |
 | `@npmegar/panal` | Aggregation per cell, rollup, zoom → resolution picker, cell rings | `h3-js` (bundled dependency) |
 | `@npmegar/panal/ol` | Hexbin layer, selection; GeoJSON, `VectorSource`, WFS and server-side cell inputs | `ol >= 10` |
+| `@npmegar/panal/deckgl` | deck.gl layer from cells: columns, flat hexagons or dots; class counts for a histogram | `@deck.gl/core`, `@deck.gl/layers`, `@deck.gl/geo-layers` 9.4 |
 | `@npmegar/panal/worker` | Client that runs the aggregation in a Web Worker | a module worker |
 | `@npmegar/panal/worker/runtime` | `installAggregationWorker(self)` for your worker file | `h3-js` |
 | `@npmegar/panal/react` | `useHexbinLayer` and `useHexbinSnapshot` | `react >= 19` |
@@ -170,6 +171,44 @@ has, panal rolls the coarsest one up; `mean` is weighted by `count`. A supersede
 its answer ignored. `getSnapshot().status` is `loading` while waiting and `error` (with `error`) if the
 provider throws.
 
+## deck.gl
+
+```ts
+import { aggregate } from '@npmegar/panal';
+import { classify } from '@npmegar/panal/classify';
+import { classCounts, createHexbinDeckLayer } from '@npmegar/panal/deckgl';
+import { MapLibreOverlay } from '@deck.gl/maplibre';
+
+const cells = aggregate(points, { resolution: 6 });
+const classification = classify([...cells.values()].map(cell => cell.value), { method: 'jenks' });
+const overlay = new MapLibreOverlay({ interleaved: true, layers: [] });
+map.addControl(overlay);
+overlay.setProps({ layers: [createHexbinDeckLayer({ cells, classification, colors, onSelect: cell => show(cell) })] });
+renderHistogram(classCounts(cells, classification));
+```
+
+`createHexbinDeckLayer` is a plain function: call it on every render with the same `id` and let deck.gl
+diff the props. It works with `MapLibreOverlay`, `MapboxOverlay` or a bare `Deck`; whether it renders
+on WebGPU or WebGL2 is up to the device you give deck.gl.
+
+| Option | Default | |
+|---|---|---|
+| `cells` | — | The `Map` from `aggregate` or `rollup`, or `[{ h3Index, value, count? }]` from a server |
+| `classification` | — | `{ breaks }` from `classify`; the class uses the same `[min, max)` rule |
+| `colors` | — | One RGB(A) array per class, a longer ramp spread over the classes, or `(classIndex, classes) => color` |
+| `style` | `'columns'` | `'columns'`: extruded `H3HexagonLayer`; `'flat'`: the same, not extruded; `'dots'`: `ScatterplotLayer` at the cell center, id suffixed `:dots` |
+| `metric` | `'value'` | What drives height and radius: `'value'` or `'count'` |
+| `maxElevation`, `maxRadius` | 10 and 0.85 edge lengths | Meters for the largest cell; the rest scale linearly (height) or by area (radius); negatives stay at 0 |
+| `noClassColor` | transparent | Cells outside the breaks |
+| `selected`, `selectedColor` | — | Paint one cell |
+| `onSelect`, `pickable` | —, `true` | `onSelect({ h3Index, value, count, classIndex }, info)` on click; clear it from the overlay `onClick` |
+| `coverage`, `id`, `props` | 0.9 in columns, `'panal-hexbin'` | `props` is spread last (`opacity`, `beforeId`, `transitions`…) |
+
+Normalized cells are cached by the identity of `cells`, so the same `Map` keeps the same `data` and deck.gl
+does not rebuild geometry; breaks, colors, metric, scale and selection travel in `updateTriggers` as
+strings. Pass a new `Map` when the cells change. `classCounts(cells, classification)` returns the
+number of cells per class.
+
 ## Web Worker
 
 ```ts
@@ -226,6 +265,8 @@ applied in place. Custom reducers and style functions are compared by identity: 
 - H3 children overhang their parent, so a rolled-up cell is the H3 hierarchy's answer, not the same as
   aggregating the points straight at the coarse resolution: in a test over central Mexico about 6 % of
   points land in a different coarse cell. Totals are preserved.
+- In MapLibre, deck.gl interleaved mode shares MapLibre's WebGL2 context; WebGPU only runs overlaid,
+  and deck.gl 9.4 still calls it experimental. Columns are not draped over MapLibre terrain.
 - WFS needs GeoJSON output (`application/json`) and paging with `startIndex`. `cql` and `bbox` travel
   as `CQL_FILTER`, a GeoServer vendor parameter.
 
@@ -243,7 +284,9 @@ npm run e2e
 `npm run e2e` runs Playwright; set `CDP_URL` to drive an already running Chrome. The demo shows 20 000
 synthetic points over Mexico, the `sf:bugsites` WFS of a public GeoServer on the main thread or inside
 the worker, and a simulated server with resolutions 3 to 7; it switches reducer (including a custom
-range), classification method and number of classes, and selects cells on click.
+range), classification method and number of classes, and selects cells on click. Its second page,
+`deck.html`, draws the synthetic points with deck.gl on MapLibre as columns, flat hexagons or dots, with
+a histogram legend.
 
 ## Contributing
 

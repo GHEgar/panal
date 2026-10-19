@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>panal demo · deck.gl</title>
+        <link rel="stylesheet" href="./styles.css" />
+    </head>
+    <body>
+        <div id="map"></div>
+        <aside class="panel">
+            <h1>panal · deck.gl</h1>
+            <p class="switch"><a href="./index.html">OpenLayers</a> · <strong>deck.gl on MapLibre</strong></p>
+            <label>Style
+                <select id="style">
+                    <option value="columns">Columns</option>
+                    <option value="flat">Flat</option>
+                    <option value="dots">Dots</option>
+                </select>
+            </label>
+            <label>Aggregation
+                <select id="reducer">
+                    <option value="count">Count</option>
+                    <option value="sum">Sum</option>
+                    <option value="mean">Mean</option>
+                    <option value="max">Maximum</option>
+                </select>
+            </label>
+            <label>Classification
+                <select id="method">
+                    <option value="quantile">Quantiles</option>
+                    <option value="jenks">Jenks</option>
+                    <option value="equalInterval">Equal intervals</option>
+                </select>
+            </label>
+            <label>Classes
+                <input id="classes" type="range" min="2" max="7" value="5" />
+            </label>
+            <p id="status"></p>
+            <ol id="histogram"></ol>
+            <section id="selection" hidden></section>
+        </aside>
+        <script type="module" src="./deck.ts"></script>
+    </body>
+</html>

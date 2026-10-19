@@ -5,6 +5,17 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+### Agregado
+
+- Subpath `@npmegar/panal/deckgl`: `createHexbinDeckLayer` convierte las celdas y la clasificación en
+  una capa de deck.gl 9.4 para MapLibre (`MapLibreOverlay`), `MapboxOverlay` o `Deck`, en columnas
+  extruidas (por omisión), hexágonos planos o puntos con radio por área; colores por clase del
+  consumidor, selección con `onSelect` y `updateTriggers` para no rehacer la geometría.
+- `classCounts`: celdas por clase, para una leyenda en histograma.
+- `@deck.gl/core`, `@deck.gl/layers` y `@deck.gl/geo-layers` `^9.4.0` como peers opcionales.
+- Página `deck.html` en el demo: los puntos sintéticos con deck.gl sobre MapLibre, estilo elegible e
+  histograma.
+
 ### Cambiado
 
 - El paquete pasa a llamarse `@npmegar/panal`.

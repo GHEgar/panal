@@ -94,3 +94,32 @@ html, body {
 #selection p, #selection ul {
     margin: 0;
 }
+
+.switch {
+    margin: -4px 0 10px;
+    font-size: 13px;
+}
+
+.switch a {
+    color: inherit;
+}
+
+#histogram {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-variant-numeric: tabular-nums;
+}
+
+#histogram li {
+    display: grid;
+    gap: 2px;
+    padding: 2px 0;
+}
+
+.bar {
+    display: block;
+    height: 10px;
+    border-radius: 3px;
+    border: 1px solid rgba(43, 29, 18, 0.25);
+}
