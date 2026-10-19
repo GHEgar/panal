@@ -1,6 +1,8 @@
 export { classify, DEFAULT_CLASSES } from './classify.js';
 export { classOf } from './class-of.js';
 export { legend } from './legend.js';
+export { legendEntry } from './legend-entry.js';
+export type { ClassesLegendEntry, LegendClassItem, LegendEntryOptions } from './legend-entry.js';
 export { JENKS_SAMPLE_SIZE } from './jenks.js';
 export { STD_DEV_LIMIT } from './std-dev.js';
 export type {

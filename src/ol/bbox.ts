@@ -28,7 +28,17 @@ export const expandExtent = (extent: MercatorExtent, margin: number): MercatorEx
 export const containsExtent = (outer: MercatorExtent, inner: MercatorExtent): boolean =>
     outer[0] <= inner[0] && outer[1] <= inner[1] && outer[2] >= inner[2] && outer[3] >= inner[3];
 
-export const bboxCql = (geometryName: string, extent: MercatorExtent, cql?: string): string => {
+export interface FragmentSink {
+    set(name: string, fragment: string | null): void;
+}
+
+export interface BboxCqlOptions {
+    composer?: FragmentSink | undefined;
+    fragment?: string | undefined;
+}
+
+export const bboxCql = (geometryName: string, extent: MercatorExtent, cql?: string, options: BboxCqlOptions = {}): string => {
     const box = `BBOX(${geometryName}, ${extent.map(value => value.toFixed(2)).join(', ')}, 'EPSG:3857')`;
+    options.composer?.set(options.fragment ?? 'bbox', box);
     return cql ? `${box} AND (${cql})` : box;
 };

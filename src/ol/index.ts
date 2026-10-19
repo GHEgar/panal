@@ -3,11 +3,12 @@ export type { CellStyle, CellStyleContext, HexbinLayer, HexbinLayerOptions, Hexb
 export { fromGeoJSON, fromVectorSource } from './sources.js';
 export type { HexbinSource } from './sources.js';
 export { bindCellClick } from './selection.js';
-export type { CellClickOptions, Selectable, Selection } from './selection.js';
+export type { ArbiterPointer, CellClickOptions, ClickArbiter, Selectable, Selection } from './selection.js';
+export type { HexbinEvent } from './events.js';
 export { fromWfs } from './wfs.js';
 export { createWorkerWfsSource, toServerCells } from './worker-wfs.js';
 export { bboxCql, containsExtent, expandExtent, lonLatToMercatorExtent } from './bbox.js';
-export type { MercatorExtent } from './bbox.js';
+export type { BboxCqlOptions, FragmentSink, MercatorExtent } from './bbox.js';
 export type { WorkerWfsBbox, WorkerWfsOptions, WorkerWfsSource } from './worker-wfs.js';
 export type { WfsOptions, WfsSource, WfsState } from './wfs.js';
 export { effectiveResolution, fromCellProvider, planServerResolution, rollupServerCells, toCells } from './server.js';

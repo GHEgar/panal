@@ -12,6 +12,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
   extruidas (por omisión), hexágonos planos o puntos con radio por área; colores por clase del
   consumidor, selección con `onSelect` y `updateTriggers` para no rehacer la geometría.
 - `classCounts`: celdas por clase, para una leyenda en histograma.
+- `bboxCql` acepta `{ composer, fragment }`: escribe el `BBOX(...)` como fragmento con nombre (por
+  omisión `'bbox'`) en cualquier objeto con `set(name, fragment)`, sin depender de quien lo componga.
+- `bindCellClick` acepta `arbiter` y `tool` (por omisión `'hexbin'`): reclama el clic en un árbitro
+  estructural (`claim(tool, { click, escape })`), recibe lon/lat, limpia la selección con `escape` y la
+  suelta al desligarse. `useHexbinLayer` lo pasa en `selectOnClick`.
+- `onEvent` en `createHexbinLayer` y `useHexbinLayer`: `select`, `resolution`, `classification` (solo si
+  cambian los cortes) y `status`.
+- `legendEntry(layerId, title, classification, colors, counts?, { format? })` en
+  `@npmegar/panal/classify`: entrada de leyenda `{ kind: 'classes', … }` con etiqueta, color, rango y
+  conteo por clase.
 - `@deck.gl/core`, `@deck.gl/layers` y `@deck.gl/geo-layers` `^9.4.0` como peers opcionales.
 - Página `deck.html` en el demo: los puntos sintéticos con deck.gl sobre MapLibre, estilo elegible e
   histograma.

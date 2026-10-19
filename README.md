@@ -171,6 +171,27 @@ has, panal rolls the coarsest one up; `mean` is weighted by `count`. A supersede
 its answer ignored. `getSnapshot().status` is `loading` while waiting and `error` (with `error`) if the
 provider throws.
 
+### Events and shared map state
+
+`createHexbinLayer({ ..., onEvent })` reports `{ type: 'select', h3Index }`, `{ type: 'resolution',
+resolution }`, `{ type: 'classification', classification }` (only when the breaks change) and
+`{ type: 'status', status, error }`.
+
+panal can plug into a host that shares the map between tools without depending on it; anything with
+the same shape works:
+
+```ts
+bboxCql('geom', extent, undefined, { composer });
+bindCellClick(hexbin, map, { arbiter, tool: 'hexbin' });
+legendEntry('crimes', 'Crimes', snapshot.classification, colors, snapshot.legend.map(c => c.count));
+```
+
+| Option | Shape it expects | What happens |
+|---|---|---|
+| `composer` (+ `fragment`, default `'bbox'`) | `{ set(name, fragment \| null) }` | The `BBOX(...)` part is written as a named CQL fragment, so it does not overwrite the filters of other tools |
+| `arbiter` (+ `tool`, default `'hexbin'`) | `{ claim(tool, { click, escape }) => release }` | The cell click goes through the arbiter instead of `singleclick`; `click` receives `{ coordinate: [lon, lat] }`, `escape` clears the selection, unbinding releases it. Use `tool: 'identify'` to select only when no other tool holds the click |
+| `legendEntry(layerId, title, classification, colors, counts?, { format? })` | — | `{ kind: 'classes', layerId, title, classes: [{ label, color, min, max, count? }] }`, a plain legend entry |
+
 ## deck.gl
 
 ```ts

@@ -7,11 +7,11 @@ import { fromLonLat } from 'ol/proj.js';
 import VectorSource from 'ol/source/Vector.js';
 import Style from 'ol/style/Style.js';
 import View from 'ol/View.js';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { aggregate } from '../../src/core/index.js';
 import type { Aggregator } from '../../src/core/index.js';
 import { fromVectorSource } from '../../src/ol/index.js';
-import type { HexbinSource } from '../../src/ol/index.js';
+import type { ArbiterPointer, HexbinEvent, HexbinSource } from '../../src/ol/index.js';
 import { useHexbinLayer, useHexbinSnapshot } from '../../src/react/index.js';
 import type { UseHexbinLayerOptions } from '../../src/react/index.js';
 
@@ -96,5 +96,29 @@ describe('useHexbinLayer', () => {
             map.dispatchEvent(event);
         });
         expect(result.current.snapshot?.selection?.members).toHaveLength(2);
+    });
+
+    it('passes the arbiter through selectOnClick and forwards events to the latest onEvent', () => {
+        const { map, source } = world();
+        const clicks: ((e: ArbiterPointer) => void)[] = [];
+        const release = vi.fn();
+        const arbiter = { claim: (_tool: string, handlers: { click?(e: ArbiterPointer): void }) => {
+            if (handlers.click) clicks.push(handlers.click);
+            return release;
+        } };
+        const first = vi.fn<(event: HexbinEvent) => void>();
+        const second = vi.fn<(event: HexbinEvent) => void>();
+        const { result, rerender, unmount } = renderHook(({ onEvent }) => useBoth({
+            map, source, style, resolution: { fixed: 7 }, selectOnClick: { arbiter }, onEvent,
+        }), { initialProps: { onEvent: first } });
+        rerender({ onEvent: second });
+        act(() => {
+            clicks[0]?.({ coordinate: [-103.35, 20.67] });
+        });
+        expect(result.current.snapshot?.selection?.members).toHaveLength(2);
+        expect(second).toHaveBeenCalledWith(expect.objectContaining({ type: 'select' }));
+        expect(clicks).toHaveLength(1);
+        unmount();
+        expect(release).toHaveBeenCalled();
     });
 });

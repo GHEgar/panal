@@ -48,7 +48,8 @@ export function useHexbinLayer(options: UseHexbinLayerOptions | null): HexbinLay
     const value = options?.value;
     const aggregator = options?.aggregator;
     const click = options?.selectOnClick ?? false;
-    const clickKey = JSON.stringify(click);
+    const arbiter = typeof click === 'object' ? click.arbiter : undefined;
+    const clickKey = JSON.stringify(typeof click === 'object' ? { ...click, arbiter: undefined } : click);
 
     useEffect(() => {
         latest.current = options;
@@ -57,7 +58,7 @@ export function useHexbinLayer(options: UseHexbinLayerOptions | null): HexbinLay
     useEffect(() => {
         const current = latest.current;
         if (!map || !source || !current) return undefined;
-        const created = createHexbinLayer(current);
+        const created = createHexbinLayer({ ...current, onEvent: event => latest.current?.onEvent?.(event) });
         applied.current = {
             style: current.style,
             classification: classificationKey(current.classification),
@@ -106,8 +107,8 @@ export function useHexbinLayer(options: UseHexbinLayerOptions | null): HexbinLay
     useEffect(() => {
         if (!hexbin || !map || clickKey === 'false') return undefined;
         const parsed = JSON.parse(clickKey) as boolean | CellClickOptions;
-        return bindCellClick(hexbin, map, parsed === true ? {} : parsed as CellClickOptions);
-    }, [hexbin, map, clickKey]);
+        return bindCellClick(hexbin, map, { ...(parsed === true ? {} : parsed as CellClickOptions), arbiter });
+    }, [hexbin, map, clickKey, arbiter]);
 
     return hexbin;
 }

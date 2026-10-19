@@ -19,6 +19,8 @@ import type { AggregateInput, Aggregator, Cell, LonLat, Reducer } from '../core/
 import { cellToFeature, toInputs } from './features.js';
 import type { ValueAccessor } from './features.js';
 import { scheduleFrame } from './frame.js';
+import { watchEvents } from './events.js';
+import type { HexbinEvent } from './events.js';
 import { produceCells } from './produce.js';
 import type { Hierarchy } from './produce.js';
 import type { Selection } from './selection.js';
@@ -45,6 +47,7 @@ export interface HexbinLayerOptions {
     classification?: ClassifyOptions | undefined;
     resolution?: ((ResolutionPickerOptions | { fixed: number }) & { hierarchical?: boolean | { base: number } }) | undefined;
     layerOptions?: Omit<VectorLayerOptions<Feature, VectorSource<Feature>>, 'source' | 'style'> | undefined;
+    onEvent?: ((event: HexbinEvent) => void) | undefined;
 }
 
 export interface HexbinSnapshot {
@@ -231,6 +234,7 @@ export const createHexbinLayer = (options: HexbinLayerOptions): HexbinLayer => {
 
     const moveKey = map.on('moveend', onMoveEnd);
     const unsubscribeSource = pointSource?.subscribe(onSourceChange) ?? cellSource?.listenChanges?.(onSourceChange) ?? (() => undefined);
+    if (options.onEvent) listeners.add(watchEvents(() => snapshot, options.onEvent));
     map.addLayer(layer);
     refresh();
 
