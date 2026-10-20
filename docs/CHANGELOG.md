@@ -5,7 +5,21 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.7.0] - 2026-10-19
+
 ### Agregado
+
+- `createHexbinOverlay(Overlay, map, options)` en `@npmegar/panal/deckgl`: crea el overlay de deck.gl
+  (la clase la pasa el consumidor, sin importar `@deck.gl/maplibre`), lo agrega como control y devuelve
+  `setLayers`, `redraw`, `canvases` y `destroy`. En modo intercalado coloca las capas y las mueve a su
+  `beforeId` en cuanto el estilo está analizado y en cada `styledata`, sin esperar a que
+  `isStyleLoaded()` dé `true` (que espera todas las teselas). Superpuesto, `canvases()` fuerza un
+  redibujado síncrono y devuelve el canvas para capturarlo; `preserveDrawingBuffer: true` crea el
+  overlay con el búfer preservado. `overlayProps(options)` da solo las props del constructor.
+- `getBaseElevation(({ h3Index, position }) => metros)` y `baseTrigger` en `createHexbinDeckLayer`:
+  cada columna (o punto) arranca en la altura de su celda, por ejemplo desde el DEM con
+  `map.queryTerrainElevation`; con base se dibuja con un `ColumnLayer` y el contorno H3 de la primera
+  celda.
 
 - Subpath `@npmegar/panal/deckgl`: `createHexbinDeckLayer` convierte las celdas y la clasificación en
   una capa de deck.gl 9.4 para MapLibre (`MapLibreOverlay`), `MapboxOverlay` o `Deck`, en columnas

@@ -1,14 +1,16 @@
 import type { Color, PickingInfo } from '@deck.gl/core';
 import { H3HexagonLayer } from '@deck.gl/geo-layers';
 import type { H3HexagonLayerProps } from '@deck.gl/geo-layers';
-import { ScatterplotLayer } from '@deck.gl/layers';
-import type { ScatterplotLayerProps } from '@deck.gl/layers';
+import { ColumnLayer, ScatterplotLayer } from '@deck.gl/layers';
+import type { ColumnLayerProps, ScatterplotLayerProps } from '@deck.gl/layers';
 import { classOf } from '../classify/class-of.js';
 import type { Classification } from '../classify/types.js';
 import type { ClassColors } from './colors.js';
 import { colorKey, palette, TRANSPARENT } from './colors.js';
 import type { HexbinCells, HexbinDeckDatum } from './data.js';
 import { deckData, edgeLength, positionOf } from './data.js';
+import type { BaseElevation } from './relief.js';
+import { hexVertices, raised } from './relief.js';
 
 export type HexbinDeckStyle = 'columns' | 'flat' | 'dots';
 
@@ -36,10 +38,12 @@ export interface HexbinDeckLayerOptions {
     selected?: string | null;
     selectedColor?: Color;
     onSelect?: (cell: HexbinDeckCell, info: PickingInfo<HexbinDeckDatum>) => void;
+    getBaseElevation?: BaseElevation;
+    baseTrigger?: string | number;
     props?: Record<string, unknown>;
 }
 
-export type HexbinDeckLayer = H3HexagonLayer<HexbinDeckDatum> | ScatterplotLayer<HexbinDeckDatum>;
+export type HexbinDeckLayer = H3HexagonLayer<HexbinDeckDatum> | ColumnLayer<HexbinDeckDatum> | ScatterplotLayer<HexbinDeckDatum>;
 
 export const ELEVATION_PER_EDGE = 10;
 export const RADIUS_PER_EDGE = 0.85;
@@ -87,11 +91,15 @@ export const createHexbinDeckLayer = (options: HexbinDeckLayerOptions): HexbinDe
         } : {}),
     };
 
+    const base = options.getBaseElevation;
+    const getPosition = base ? raised(base) : positionOf;
+    const baseTrigger = base ? `base|${options.baseTrigger ?? ''}` : '';
+
     if (style === 'dots') {
         return new ScatterplotLayer<HexbinDeckDatum>({
             ...common,
             id: `${id}${DOTS_SUFFIX}`,
-            getPosition: positionOf,
+            getPosition,
             getRadius: datum => Math.sqrt(share(datum)) * maxRadius,
             radiusUnits: 'meters',
             radiusMinPixels: 1,
@@ -100,12 +108,39 @@ export const createHexbinDeckLayer = (options: HexbinDeckLayerOptions): HexbinDe
             updateTriggers: {
                 getFillColor: fillTrigger,
                 getRadius: `${metric}|${maxRadius}`,
+                getPosition: baseTrigger,
             },
             ...options.props as Partial<ScatterplotLayerProps<HexbinDeckDatum>>,
         });
     }
 
     const extruded = style === 'columns';
+    const coverage = options.coverage ?? (extruded ? COLUMN_COVERAGE : 1);
+    const getElevation = (datum: HexbinDeckDatum): number => share(datum) * maxElevation;
+    const vertices = base ? hexVertices(data) : null;
+    if (vertices) {
+        return new ColumnLayer<HexbinDeckDatum>({
+            ...common,
+            id,
+            diskResolution: vertices.length,
+            vertices,
+            radius: 1,
+            coverage,
+            extruded,
+            filled: true,
+            stroked: false,
+            flatShading: true,
+            getPosition,
+            getElevation,
+            elevationScale: 1,
+            updateTriggers: {
+                getFillColor: fillTrigger,
+                getElevation: `${metric}|${maxElevation}`,
+                getPosition: baseTrigger,
+            },
+            ...options.props as Partial<ColumnLayerProps<HexbinDeckDatum>>,
+        });
+    }
     return new H3HexagonLayer<HexbinDeckDatum>({
         ...common,
         id,
@@ -113,8 +148,8 @@ export const createHexbinDeckLayer = (options: HexbinDeckLayerOptions): HexbinDe
         extruded,
         filled: true,
         stroked: false,
-        coverage: options.coverage ?? (extruded ? COLUMN_COVERAGE : 1),
-        getElevation: datum => share(datum) * maxElevation,
+        coverage,
+        getElevation,
         elevationScale: 1,
         updateTriggers: {
             getFillColor: fillTrigger,

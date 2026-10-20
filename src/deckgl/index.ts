@@ -3,3 +3,6 @@ export type { HexbinDeckCell, HexbinDeckLayer, HexbinDeckLayerOptions, HexbinDec
 export { classCounts } from './data.js';
 export type { HexbinCellLike, HexbinCells, HexbinDeckDatum } from './data.js';
 export type { ClassColors } from './colors.js';
+export { createHexbinOverlay, overlayProps } from './overlay.js';
+export type { DeckOverlayLike, HexbinOverlay, HexbinOverlayOptions, OverlayMapLike } from './overlay.js';
+export type { BaseElevation, HexbinBaseCell } from './relief.js';

@@ -224,11 +224,54 @@ on WebGPU or WebGL2 is up to the device you give deck.gl.
 | `selected`, `selectedColor` | — | Paint one cell |
 | `onSelect`, `pickable` | —, `true` | `onSelect({ h3Index, value, count, classIndex }, info)` on click; clear it from the overlay `onClick` |
 | `coverage`, `id`, `props` | 0.9 in columns, `'panal-hexbin'` | `props` is spread last (`opacity`, `beforeId`, `transitions`…) |
+| `getBaseElevation`, `baseTrigger` | — | `({ h3Index, position }) => meters`: each column (or dot) starts at that height instead of 0; change `baseTrigger` when the ground changes |
 
 Normalized cells are cached by the identity of `cells`, so the same `Map` keeps the same `data` and deck.gl
 does not rebuild geometry; breaks, colors, metric, scale and selection travel in `updateTriggers` as
 strings. Pass a new `Map` when the cells change. `classCounts(cells, classification)` returns the
 number of cells per class.
+
+### Terrain
+
+Over MapLibre terrain, columns that start at 0 sink under the relief. `getBaseElevation` lifts every
+cell to its own ground, for example sampled from the map's DEM:
+
+```ts
+createHexbinDeckLayer({
+    cells, classification, colors,
+    getBaseElevation: ({ position }) => map.queryTerrainElevation(position) ?? 0,
+    baseTrigger: terrainVersion,
+});
+```
+
+`queryTerrainElevation` already includes the terrain exaggeration and only knows the DEM tiles loaded
+for the current view, so recompute on `idle` or `terrain` and bump `baseTrigger`. With a base the
+columns are drawn by a `ColumnLayer` with the H3 hexagon outline of the first cell, as
+`H3HexagonLayer` does at resolutions above 5; very large views or low resolutions distort a little.
+
+### Overlay
+
+```ts
+import { MapLibreOverlay } from '@deck.gl/maplibre';
+import { createHexbinOverlay } from '@npmegar/panal/deckgl';
+
+const hexbin = createHexbinOverlay(MapLibreOverlay, map, { interleaved: true });
+hexbin.setLayers([createHexbinDeckLayer({ ...options, props: { beforeId: 'labels' } })]);
+```
+
+`createHexbinOverlay(Overlay, map, options)` creates the overlay, adds it as a control and returns
+`{ overlay, interleaved, setLayers, redraw, canvases, destroy }`. panal does not import
+`@deck.gl/maplibre`; you pass the class.
+
+- **Order.** deck.gl inserts interleaved layers only when `map.isStyleLoaded()` is true, which waits for
+  every tile source to finish. `setLayers` places them (and moves them to their `beforeId`) as soon as
+  the style itself is parsed, and again on every `styledata`, so a `beforeId` computed from your layer
+  order applies while WMS tiles are still loading.
+- **Capture.** Overlaid, deck.gl draws on its own canvas, which is cleared after each frame.
+  `canvases()` forces a synchronous redraw and returns that canvas, ready to copy in the same task (for
+  example as cartela's `overlays`); `preserveDrawingBuffer: true` creates the overlay with a preserved
+  buffer instead, at some cost. Interleaved, the layers are part of the map canvas and `canvases()` is
+  empty. `overlayProps(options)` gives the constructor props alone.
 
 ## Web Worker
 
@@ -287,7 +330,10 @@ applied in place. Custom reducers and style functions are compared by identity: 
   aggregating the points straight at the coarse resolution: in a test over central Mexico about 6 % of
   points land in a different coarse cell. Totals are preserved.
 - In MapLibre, deck.gl interleaved mode shares MapLibre's WebGL2 context; WebGPU only runs overlaid,
-  and deck.gl 9.4 still calls it experimental. Columns are not draped over MapLibre terrain.
+  and deck.gl 9.4 still calls it experimental. Columns follow MapLibre terrain only through
+  `getBaseElevation`.
+- `redraw` and `canvases()` call the overlay's internal `Deck` (`_deck.redraw`), which deck.gl does not
+  document; if it goes away, create the overlay with `preserveDrawingBuffer: true`.
 - WFS needs GeoJSON output (`application/json`) and paging with `startIndex`. `cql` and `bbox` travel
   as `CQL_FILTER`, a GeoServer vendor parameter.
 
