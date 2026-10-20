@@ -11,7 +11,9 @@ export type BaseElevation = (cell: HexbinBaseCell) => number | null | undefined;
 
 const METERS_PER_DEGREE = 111_319.49;
 
-export const hexVertices = (data: readonly HexbinDeckDatum[]): [number, number][] | null => {
+const outlines = new WeakMap<readonly HexbinDeckDatum[], [number, number][] | null>();
+
+const outline = (data: readonly HexbinDeckDatum[]): [number, number][] | null => {
     const sample = data.find(datum => isValidCell(datum.h3Index) && !isPentagon(datum.h3Index));
     if (!sample) return null;
     const [lat, lng] = cellToLatLng(sample.h3Index);
@@ -21,6 +23,11 @@ export const hexVertices = (data: readonly HexbinDeckDatum[]): [number, number][
         const dx = ((((x as number) - lng + 540) % 360) - 180) * METERS_PER_DEGREE * scale;
         return [dx, ((y as number) - lat) * METERS_PER_DEGREE];
     });
+};
+
+export const hexVertices = (data: readonly HexbinDeckDatum[]): [number, number][] | null => {
+    if (!outlines.has(data)) outlines.set(data, outline(data));
+    return outlines.get(data) ?? null;
 };
 
 export const raised = (base: BaseElevation) => (datum: HexbinDeckDatum): [number, number, number] => {

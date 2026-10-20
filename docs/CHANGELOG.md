@@ -5,6 +5,26 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.8.0] - 2026-10-20
+
+### Agregado
+
+- `RELIEF_SUFFIX` (`':relief'`) y `hexbinLayerId(deckLayerId)` en `@npmegar/panal/deckgl`: quita el
+  sufijo `:relief` o `:dots` del id de la capa que devuelve el picking.
+
+### Cambiado
+
+- Con `getBaseElevation`, el `ColumnLayer` de columnas y planos se llama `<id>:relief` en lugar de
+  `<id>`. Quien compare el id de la capa del picking debe usar `hexbinLayerId`.
+
+### Corregido
+
+- Encender la base de elevación con el mismo `id` hacía que deck.gl pasara el estado del
+  `H3HexagonLayer` al `ColumnLayer` nuevo: la actualización fallaba y las columnas no se dibujaban
+  hasta recrear el overlay.
+- El contorno del hexágono con base se guarda por arreglo de datos: antes era un arreglo nuevo en cada
+  render y el `ColumnLayer` rehacía la geometría cada vez.
+
 ## [0.7.0] - 2026-10-19
 
 ### Agregado

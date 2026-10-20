@@ -3,7 +3,7 @@ import { ColumnLayer, ScatterplotLayer } from '@deck.gl/layers';
 import { cellToLatLng, getHexagonEdgeLengthAvg, latLngToCell } from 'h3-js';
 import { describe, expect, it } from 'vitest';
 import type { HexbinBaseCell, HexbinDeckDatum, HexbinDeckLayerOptions } from '../../src/deckgl/index.js';
-import { createHexbinDeckLayer } from '../../src/deckgl/index.js';
+import { createHexbinDeckLayer, hexbinLayerId, RELIEF_SUFFIX } from '../../src/deckgl/index.js';
 
 const a = latLngToCell(20.67, -103.35, 8);
 const b = latLngToCell(20.70, -103.30, 8);
@@ -28,7 +28,7 @@ describe('base elevation', () => {
     it('raises each column to the ground of its cell', () => {
         const layer = make({ getBaseElevation: base, baseTrigger: 3 });
         expect(layer).toBeInstanceOf(ColumnLayer);
-        expect(layer.id).toBe('panal-hexbin');
+        expect(layer.id).toBe('panal-hexbin:relief');
         const [lon, lat, z] = position(layer, b);
         const [cellLat, cellLon] = cellToLatLng(b);
         expect([lon, lat]).toEqual([cellLon, cellLat]);
@@ -55,5 +55,34 @@ describe('base elevation', () => {
         const dots = make({ getBaseElevation: base, style: 'dots' });
         expect(dots).toBeInstanceOf(ScatterplotLayer);
         expect(position(dots, a)[2]).toBe(1550);
+    });
+
+    it('never reuses the H3 layer id, so deck.gl does not hand the H3 state to a ColumnLayer', () => {
+        const flat = make({ id: 'hex' });
+        const lifted = make({ id: 'hex', getBaseElevation: base });
+        expect(flat.id).toBe('hex');
+        expect(lifted.id).toBe(`hex${RELIEF_SUFFIX}`);
+        expect(make({ id: 'hex', getBaseElevation: base, style: 'flat' }).id).toBe('hex:relief');
+        expect(make({ id: 'hex', getBaseElevation: base, style: 'dots' }).id).toBe(make({ id: 'hex', style: 'dots' }).id);
+        expect([flat.id, lifted.id, 'hex:dots'].map(hexbinLayerId)).toEqual(['hex', 'hex', 'hex']);
+        expect(hexbinLayerId('hex:other')).toBe('hex:other');
+    });
+
+    it('keeps the same outline array across renders so the column geometry is not rebuilt', () => {
+        const first = props(make({ getBaseElevation: base, baseTrigger: 1 })).vertices;
+        const second = props(make({ getBaseElevation: () => 0, baseTrigger: 2, style: 'flat' })).vertices;
+        expect(second).toBe(first);
+        expect(props(make({ cells: [...cells], getBaseElevation: base })).vertices).not.toBe(first);
+    });
+
+    it('puts the ground in the position and leaves elevationScale to the column height', () => {
+        const layer = make({ getBaseElevation: base, maxElevation: 100, props: { elevationScale: 3 } });
+        expect(position(layer, b)[2]).toBe(1620);
+        expect(props(layer).elevationScale).toBe(3);
+        const data = props(layer).data as HexbinDeckDatum[];
+        const top = (props(layer).getElevation as (datum: HexbinDeckDatum) => number)(data.find(datum => datum.h3Index === b) as HexbinDeckDatum);
+        expect(top).toBe(100);
+        expect(props(layer).radius).toBe(1);
+        expect(props(layer).radiusUnits ?? 'meters').toBe('meters');
     });
 });

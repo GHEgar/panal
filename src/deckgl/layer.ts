@@ -49,6 +49,14 @@ export const ELEVATION_PER_EDGE = 10;
 export const RADIUS_PER_EDGE = 0.85;
 export const COLUMN_COVERAGE = 0.9;
 export const DOTS_SUFFIX = ':dots';
+export const RELIEF_SUFFIX = ':relief';
+
+export const hexbinLayerId = (deckLayerId: string): string => {
+    for (const suffix of [DOTS_SUFFIX, RELIEF_SUFFIX]) {
+        if (deckLayerId.endsWith(suffix)) return deckLayerId.slice(0, -suffix.length);
+    }
+    return deckLayerId;
+};
 
 const toCell = (datum: HexbinDeckDatum, breaks: readonly number[]): HexbinDeckCell => ({
     h3Index: datum.h3Index,
@@ -121,7 +129,7 @@ export const createHexbinDeckLayer = (options: HexbinDeckLayerOptions): HexbinDe
     if (vertices) {
         return new ColumnLayer<HexbinDeckDatum>({
             ...common,
-            id,
+            id: `${id}${RELIEF_SUFFIX}`,
             diskResolution: vertices.length,
             vertices,
             radius: 1,

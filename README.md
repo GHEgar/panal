@@ -223,7 +223,7 @@ on WebGPU or WebGL2 is up to the device you give deck.gl.
 | `noClassColor` | transparent | Cells outside the breaks |
 | `selected`, `selectedColor` | — | Paint one cell |
 | `onSelect`, `pickable` | —, `true` | `onSelect({ h3Index, value, count, classIndex }, info)` on click; clear it from the overlay `onClick` |
-| `coverage`, `id`, `props` | 0.9 in columns, `'panal-hexbin'` | `props` is spread last (`opacity`, `beforeId`, `transitions`…) |
+| `coverage`, `id`, `props` | 0.9 in columns, `'panal-hexbin'` (`:dots` or `:relief` appended, see below) | `props` is spread last (`opacity`, `beforeId`, `transitions`…) |
 | `getBaseElevation`, `baseTrigger` | — | `({ h3Index, position }) => meters`: each column (or dot) starts at that height instead of 0; change `baseTrigger` when the ground changes |
 
 Normalized cells are cached by the identity of `cells`, so the same `Map` keeps the same `data` and deck.gl
@@ -245,9 +245,19 @@ createHexbinDeckLayer({
 ```
 
 `queryTerrainElevation` already includes the terrain exaggeration and only knows the DEM tiles loaded
-for the current view, so recompute on `idle` or `terrain` and bump `baseTrigger`. With a base the
-columns are drawn by a `ColumnLayer` with the H3 hexagon outline of the first cell, as
-`H3HexagonLayer` does at resolutions above 5; very large views or low resolutions distort a little.
+for the current view, so recompute on `idle` or `terrain` and bump `baseTrigger`. The base is the
+absolute height of the ground, in the same meters as the DEM: do not add a `modelMatrix` on top, and
+`elevationScale` only scales the column height, never the base. With a base the columns are drawn by a
+`ColumnLayer` with the H3 hexagon outline of the first cell, as `H3HexagonLayer` does at resolutions
+above 5; very large views or low resolutions distort a little.
+
+That layer is named `<id>:relief`, so turning the base on or off never hands the state of an
+`H3HexagonLayer` to a `ColumnLayer` with the same id (deck.gl matches layers by id, and the new one
+would not be drawn). `hexbinLayerId(info.layer.id)` drops the `:relief` or `:dots` suffix of a picked
+layer.
+
+Columns keep their size in meters: close to the ground, a coarse cell is wider than the camera is
+high, so lower `maxElevation` or pick a finer resolution as the map zooms in.
 
 ### Overlay
 
